@@ -190,7 +190,7 @@ module "server" {
   kms_key_arn                    = aws_kms_key.default.arn
   session_log_bucket_name_prefix = "${local.name}-sessionlogs"
   ssh_user                       = "ec2-user"
-  ssh_password                   = "PasswordThatIDontReallyNeedSinceSSMRequiresAWSCreds"
+  ssh_password                   = "password"
   assign_public_ip               = true
   tenancy                        = "default"
   zarf_version                   = "v0.29.0"

@@ -43,66 +43,53 @@ endif
 FORCE:
 
 .PHONY: help
-help: ## Show a list of all targets
+help: ## Show available user-facing targets
 	grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 	| sed -n 's/^\(.*\): \(.*\)##\(.*\)/\1:\3/p' \
 	| column -t -s ":"
 
-.PHONY: _create-folders
-_create-folders:
-	mkdir -p .cache/docker
-	mkdir -p .cache/pre-commit
-	mkdir -p .cache/go
-	mkdir -p .cache/go-build
-	mkdir -p .cache/tmp
-	mkdir -p .cache/.terraform.d/plugin-cache
-	mkdir -p .cache/.zarf-cache
+.PHONY: help-extended
+help-extended: ## Show available dev-facing targets
+	grep -E '^[a-zA-Z0-9_-]+:.*?#_# .*$$' $(MAKEFILE_LIST) \
+	| sed -n 's/^\(.*\): \(.*\)#_#\(.*\)/\1:\3/p' \
+	| column -t -s ":"
 
-.PHONY: docker-save-build-harness
-docker-save-build-harness: _create-folders ## Pulls the build harness docker image and saves it to a tarball
-	docker pull ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
-	docker save -o .cache/docker/build-harness.tar ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+.PHONY: on-prem-lite-up
+on-prem-lite-up: ## Full on-prem-lite deployment
+ifneq ($(shell id -u), 0)
+	$(error "This target must be run as root")
+endif
+ifndef AWS_ACCESS_KEY_ID
+	$(error AWS CLI environment variables are not set)
+endif
+	$(MAKE) -s \
+		on-prem-lite-terraform-init \
+		on-prem-lite-terraform-apply \
+		_sleep180 \
+		on-prem-lite-zarf-init \
+		on-prem-lite-deploy-metallb \
+		on-prem-lite-deploy-dubbd \
+		on-prem-lite-deploy-idam \
+		on-prem-lite-deploy-sso \
+		on-prem-lite-update-server-etc-hosts \
+		on-prem-lite-update-local-etc-hosts \
+		on-prem-lite-update-coredns-config \
+		on-prem-lite-deploy-mission-app
 
-.PHONY: docker-load-build-harness
-docker-load-build-harness: ## Loads the saved build harness docker image
-	docker load -i .cache/docker/build-harness.tar
-
-.PHONY: _runhooks
-_runhooks: _create-folders
-	docker run ${ALL_THE_DOCKER_ARGS} \
-	bash -c 'git config --global --add safe.directory /app \
-		&& pre-commit run -a --show-diff-on-failure $(HOOK)'
-
-.PHONY: pre-commit-all
-pre-commit-all: ## Run all pre-commit hooks. Returns nonzero exit code if any hooks fail. Uses Docker for maximum compatibility
-	$(MAKE) _runhooks HOOK="" SKIP=""
-
-.PHONY: pre-commit-terraform
-pre-commit-terraform: ## Run the terraform pre-commit hooks. Returns nonzero exit code if any hooks fail. Uses Docker for maximum compatibility
-	$(MAKE) _runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,go-fmt,golangci-lint,renovate-config-validator"
-
-.PHONY: pre-commit-golang
-pre-commit-golang: ## Run the golang pre-commit hooks. Returns nonzero exit code if any hooks fail. Uses Docker for maximum compatibility
-	$(MAKE) _runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
-
-.PHONY: pre-commit-renovate
-pre-commit-renovate: ## Run the renovate pre-commit hooks. Returns nonzero exit code if any hooks fail. Uses Docker for maximum compatibility
-	$(MAKE) _runhooks HOOK="renovate-config-validator" SKIP=""
-
-.PHONY: pre-commit-common
-pre-commit-common: ## Run the common pre-commit hooks. Returns nonzero exit code if any hooks fail. Uses Docker for maximum compatibility
-	$(MAKE) _runhooks HOOK="" SKIP="go-fmt,golangci-lint,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
-
-.PHONY: fix-cache-permissions
-fix-cache-permissions: ## Fixes the permissions on the pre-commit cache
-	docker run $(TTY_ARG) --rm -v "${PWD}:/app" --workdir "/app" -e "PRE_COMMIT_HOME=/app/.cache/pre-commit" ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION} chmod -R a+rx .cache
-
-.PHONY: autoformat
-autoformat: ## Update files with automatic formatting tools. Uses Docker for maximum compatibility.
-	$(MAKE) _runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,check-yaml,golangci-lint,terraform_checkov,terraform_tflint,renovate-config-validator"
+.PHONY: on-prem-lite-down
+on-prem-lite-down: ## Teardown on-prem-lite deployment
+ifneq ($(shell id -u), 0)
+	$(error "This target must be run as root")
+endif
+ifndef AWS_ACCESS_KEY_ID
+	$(error AWS CLI environment variables are not set)
+endif
+	$(MAKE) -s \
+		on-prem-lite-rollback-local-etc-hosts \
+		on-prem-lite-terraform-destroy
 
 .PHONY: on-prem-lite-terraform-init
-on-prem-lite-terraform-init: _create-folders ## Run terraform init on the on-prem-lite infra
+on-prem-lite-terraform-init: _create-folders #_# Run terraform init on the on-prem-lite infra
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -111,7 +98,7 @@ endif
 			&& terraform init'
 
 .PHONY: on-prem-lite-terraform-plan
-on-prem-lite-terraform-plan: _create-folders ## Run terraform plan on the on-prem-lite infra
+on-prem-lite-terraform-plan: _create-folders #_# Run terraform plan on the on-prem-lite infra
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -119,40 +106,8 @@ endif
 		bash -c 'cd deployments/on-prem-lite/terraform \
 			&& terraform plan'
 
-.PHONY: on-prem-lite-up
-on-prem-lite-up: ## Zero to One Hundred for the on-prem-lite deployment, not including the updates to the local /etc/hosts file
-ifneq ($(shell id -u), 0)
-	$(error "This target must be run as root")
-endif
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	$(MAKE) on-prem-lite-terraform-init \
-	&& $(MAKE) on-prem-lite-terraform-apply \
-	&& sleep 180 \
-	&& $(MAKE) on-prem-lite-zarf-init \
-	&& $(MAKE) on-prem-lite-deploy-metallb \
-	&& $(MAKE) on-prem-lite-deploy-dubbd \
-	&& $(MAKE) on-prem-lite-deploy-idam \
-	&& $(MAKE) on-prem-lite-deploy-sso \
-	&& $(MAKE) on-prem-lite-update-server-etc-hosts \
-	&& $(MAKE) on-prem-lite-update-local-etc-hosts \
-	&& $(MAKE) on-prem-lite-update-coredns-config \
-	&& $(MAKE) on-prem-lite-deploy-mission-app
-
-.PHONY: on-prem-lite-down
-on-prem-lite-down: ## One Hundred to Zero for the on-prem-lite-deployment, not including the updates to the local/etc/hosts file
-ifneq ($(shell id -u), 0)
-	$(error "This target must be run as root")
-endif
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	$(MAKE) on-prem-lite-rollback-local-etc-hosts
-	$(MAKE) on-prem-lite-terraform-destroy
-
 .PHONY: on-prem-lite-terraform-apply
-on-prem-lite-terraform-apply: _create-folders ## Run terraform apply on the on-prem-lite infra
+on-prem-lite-terraform-apply: _create-folders #_# Run terraform apply on the on-prem-lite infra
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -161,7 +116,7 @@ endif
 			&& terraform apply -auto-approve'
 
 .PHONY: on-prem-lite-terraform-destroy
-on-prem-lite-terraform-destroy: _create-folders ## Run terraform destroy on the on-prem-lite infra
+on-prem-lite-terraform-destroy: _create-folders #_# Run terraform destroy on the on-prem-lite infra
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -170,7 +125,7 @@ endif
 		&& terraform destroy -auto-approve'
 
 .PHONY: on-prem-lite-start-session
-on-prem-lite-start-session: _create-folders ## Start a session on the on-prem-lite server
+on-prem-lite-start-session: _create-folders #_# Start a session on the on-prem-lite server
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -180,10 +135,10 @@ endif
 				--region $$(terraform output -raw region) \
 				--target $$(terraform output -raw server_id)'
 
-# On Mac there's no good way to install sshpass. Enter the password yourself ya lazy bum. The password is "PasswordThatIDontReallyNeedSinceSSMRequiresAWSCreds"
+# On Mac there's no good way to install sshpass. Enter the password yourself ya lazy bum. The password is "password".
 # Make sure you have the stuff you need installed (sshuttle, ssh, AWS CLI, session manager plugin, etc)
 .PHONY: on-prem-lite-start-sshuttle
-on-prem-lite-start-sshuttle: _create-folders ## Start an Sshuttle session with the on-prem-lite server
+on-prem-lite-start-sshuttle: _create-folders #_# Start an Sshuttle session with the on-prem-lite server
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
@@ -193,7 +148,7 @@ endif
 	sshuttle -e 'ssh -q -o CheckHostIP=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="aws ssm --region $(shell docker run ${ALL_THE_DOCKER_ARGS} bash -c 'cd deployments/on-prem-lite/terraform && terraform output -raw region') start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"' --dns --disable-ipv6 -vr ec2-user@$(shell docker run ${ALL_THE_DOCKER_ARGS} bash -c 'cd deployments/on-prem-lite/terraform && terraform output -raw server_id') $(shell docker run ${ALL_THE_DOCKER_ARGS} bash -c 'cd deployments/on-prem-lite/terraform && terraform output -raw vpc_cidr') 10.0.255.0/24 \
 
 .PHONY: on-prem-lite-zarf-init
-on-prem-lite-zarf-init: _create-folders ## Run 'zarf init' on the on-prem-lite server
+on-prem-lite-zarf-init: _create-folders #_# Run 'zarf init' on the on-prem-lite server
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -211,7 +166,7 @@ endif
 				"]'"'"''
 
 .PHONY: on-prem-lite-deploy-metallb
-on-prem-lite-deploy-metallb: _create-folders ## Deploy Metallb
+on-prem-lite-deploy-metallb: _create-folders #_# Deploy Metallb
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -230,7 +185,7 @@ endif
 
 # TODO: Take out this APPROVED_REGISTRIES thing. See https://github.com/defenseunicorns/uds-sso/issues/25
 .PHONY: on-prem-lite-deploy-dubbd
-on-prem-lite-deploy-dubbd: _create-folders ## Deploy DUBBD
+on-prem-lite-deploy-dubbd: _create-folders #_# Deploy DUBBD
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -248,7 +203,7 @@ endif
 				"]'"'"''
 
 .PHONY: on-prem-lite-deploy-idam
-on-prem-lite-deploy-idam: _create-folders ## Deploy the IDAM package (Keycloak)
+on-prem-lite-deploy-idam: _create-folders #_# Deploy the IDAM package (Keycloak)
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -265,7 +220,7 @@ endif
 				"]'"'"''
 
 .PHONY: on-prem-lite-deploy-sso
-on-prem-lite-deploy-sso: _create-folders ## Deploy the SSO package (Pepr and Authservice)
+on-prem-lite-deploy-sso: _create-folders #_# Deploy the SSO package (Pepr and Authservice)
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -282,7 +237,7 @@ endif
 				"]'"'"''
 
 .PHONY: on-prem-lite-update-server-etc-hosts
-on-prem-lite-update-server-etc-hosts: _create-folders ## Update the /etc/hosts file on the server
+on-prem-lite-update-server-etc-hosts: _create-folders #_# Update the /etc/hosts file on the server
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -300,7 +255,7 @@ endif
 				"]'"'"''
 
 .PHONY: on-prem-lite-update-coredns-config
-on-prem-lite-update-coredns-config: _create-folders ## Update the CoreDNS config on the server
+on-prem-lite-update-coredns-config: _create-folders #_# Update the CoreDNS config on the server
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -318,7 +273,7 @@ endif
 				"]'"'"''
 
 .PHONY: on-prem-lite-update-local-etc-hosts
-on-prem-lite-update-local-etc-hosts: _create-folders ## Update the /etc/hosts file on the local machine
+on-prem-lite-update-local-etc-hosts: _create-folders #_# Update the /etc/hosts file on the local machine
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
@@ -328,14 +283,14 @@ endif
 	chmod +x scripts/on-prem-lite/update-local-etc-hosts.sh && scripts/on-prem-lite/update-local-etc-hosts.sh
 
 .PHONY: on-prem-lite-rollback-local-etc-hosts
-on-prem-lite-rollback-local-etc-hosts: _create-folders ## Rollback the /etc/hosts file on the local machine
+on-prem-lite-rollback-local-etc-hosts: _create-folders #_# Rollback the /etc/hosts file on the local machine
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
 	chmod +x scripts/on-prem-lite/rollback-local-etc-hosts.sh && scripts/on-prem-lite/rollback-local-etc-hosts.sh
 
 .PHONY: on-prem-lite-deploy-mission-app
-on-prem-lite-deploy-mission-app: _create-folders ## Deploy the Mission App
+on-prem-lite-deploy-mission-app: _create-folders #_# Deploy the Mission App
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -353,7 +308,7 @@ endif
 				"]'"'"''
 
 .PHONY: on-prem-lite-destroy-cluster
-on-prem-lite-destroy-cluster: _create-folders ## Destroy the Kubernetes cluster (but not the server)
+on-prem-lite-destroy-cluster: _create-folders #_# Destroy the Kubernetes cluster (but not the server)
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -370,7 +325,7 @@ endif
 				"]'"'"''
 
 .PHONY: _on-prem-lite-get-admin-ingressgateway-ip
-_on-prem-lite-get-admin-ingressgateway-ip: _create-folders
+_on-prem-lite-get-admin-ingressgateway-ip: _create-folders #_# Get the IP address of the admin-ingressgateway service
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -385,7 +340,7 @@ endif
 				"]'"'"' | sed "/session/d" | sed "/^$$/d" | tr -d "\\n"'
 
 .PHONY: _on-prem-lite-get-keycloak-ingressgateway-ip
-_on-prem-lite-get-keycloak-ingressgateway-ip: _create-folders
+_on-prem-lite-get-keycloak-ingressgateway-ip: _create-folders #_# Get the IP address of the keycloak-ingressgateway service
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -400,7 +355,7 @@ endif
 				"]'"'"' | sed "/session/d" | sed "/^$$/d" | tr -d "\\n"'
 
 .PHONY: _on-prem-lite-get-tenant-ingressgateway-ip
-_on-prem-lite-get-tenant-ingressgateway-ip: _create-folders
+_on-prem-lite-get-tenant-ingressgateway-ip: _create-folders #_# Get the IP address of the tenant-ingressgateway service
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -413,3 +368,61 @@ endif
 				--parameters command='"'"'[" \
 					sudo kubectl get svc tenant-ingressgateway -n istio-system -o=jsonpath=\"{.status.loadBalancer.ingress[0].ip}\" \
 				"]'"'"' | sed "/session/d" | sed "/^$$/d" | tr -d "\\n"'
+
+.PHONY: _sleep180
+_sleep180: #_# Sleep for 180 seconds
+	echo "Sleeping for 180 seconds to allow the instance user data script to finish"
+	sleep 180
+
+.PHONY: _create-folders
+_create-folders: #_# Create the .cache folder structure
+	mkdir -p .cache/docker
+	mkdir -p .cache/pre-commit
+	mkdir -p .cache/go
+	mkdir -p .cache/go-build
+	mkdir -p .cache/tmp
+	mkdir -p .cache/.terraform.d/plugin-cache
+	mkdir -p .cache/.zarf-cache
+
+.PHONY: docker-save-build-harness
+docker-save-build-harness: _create-folders #_# Save the build-harness docker image to the .cache folder
+	docker pull ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+	docker save -o .cache/docker/build-harness.tar ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+
+.PHONY: docker-load-build-harness
+docker-load-build-harness: #_# Load the build-harness docker image from the .cache folder
+	docker load -i .cache/docker/build-harness.tar
+
+.PHONY: _runhooks
+_runhooks: _create-folders #_# [internal] Run pre-commit hooks
+	docker run ${ALL_THE_DOCKER_ARGS} \
+	bash -c 'git config --global --add safe.directory /app \
+		&& pre-commit run -a --show-diff-on-failure $(HOOK)'
+
+.PHONY: pre-commit-all
+pre-commit-all: #_# Run all pre-commit hooks
+	$(MAKE) _runhooks HOOK="" SKIP=""
+
+.PHONY: pre-commit-terraform
+pre-commit-terraform: #_# Run terraform pre-commit hooks
+	$(MAKE) _runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,go-fmt,golangci-lint,renovate-config-validator"
+
+.PHONY: pre-commit-golang
+pre-commit-golang: #_# Run golang pre-commit hooks
+	$(MAKE) _runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
+
+.PHONY: pre-commit-renovate
+pre-commit-renovate: #_# Run renovate pre-commit hooks
+	$(MAKE) _runhooks HOOK="renovate-config-validator" SKIP=""
+
+.PHONY: pre-commit-common
+pre-commit-common: #_# Run common pre-commit hooks
+	$(MAKE) _runhooks HOOK="" SKIP="go-fmt,golangci-lint,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
+
+.PHONY: fix-cache-permissions
+fix-cache-permissions: #_# Fix permissions on the .cache folder
+	docker run $(TTY_ARG) --rm -v "${PWD}:/app" --workdir "/app" -e "PRE_COMMIT_HOME=/app/.cache/pre-commit" ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION} chmod -R a+rx .cache
+
+.PHONY: autoformat
+autoformat: #_# Autoformat all files
+	$(MAKE) _runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,check-yaml,golangci-lint,terraform_checkov,terraform_tflint,renovate-config-validator"

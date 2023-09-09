@@ -77,18 +77,19 @@ Then:
 14. Run Sshuttle with `sudo -E make on-prem-lite-start-sshuttle`. This is a blocking command that will run until you CTRL-C it.
     > **NOTES:**
     > - Sshuttle is fickle. We've done our best to make it easy to use, but it is still a pain in the ass.
-    > - Because `ssh` is used as the connection mechanism you will be prompted for the server's password. The password is "PasswordThatIDontReallyNeedSinceSSMRequiresAWSCreds". The password doesn't need to be changed and isn't a security issue if it gets out since the SSH port is not exposed and Session Manager is needed to connect to the server.
+    > - Because `ssh` is used as the connection mechanism you will be prompted for the server's password. The password is "password". The password doesn't need to be changed and isn't a security issue if it gets out since the SSH port is not exposed and Session Manager is needed to connect to the server.
 15. Open a browser and go to https://podinfo.bigbang.dev. If everything worked successfully it should redirect you and show the Keycloak login page. This concludes the guided deployment.
 
 When you're done:
 
 16. To teardown, run `sudo -E make on-prem-lite-down`.
 
-## "Gotchas"
+## Notes
 
-The following is a list of "gotchas" that frequently act as speedbumps when deploying stuff like this.
+The following is some notes and a list of "gotchas" that frequently act as speedbumps when deploying stuff like this.
 
 - When making the secret(s) that tell Pepr to configure AuthService to sit in front of an app, be sure that the base64 encoded values of the secrets do not contain trailing newlines. If they do, Pepr will not be able to parse the secret and will fail to deploy the app. A common method is to use `echo "<TheValue>" | base64` to base64 encode a secret, but doing this will add a trailing newline. Be sure to use `echo -n` to prevent the trailing newline from being added.
 - To get Pepr to configure AuthService to sit in front of an app, the label `protect: keycloak` must be added to the pod(s). The most common/likely way to do this is in the Deployment manifest, in `spec.template.metadata.labels`. If this label is not present, Pepr will not configure AuthService to sit in front of the app.
 - DUBBD requires TLSv1.3 or better. The versions of `curl` and `openssl` that are present in Amazon Linux 2 do not support TLSv1.3.
 - Pepr needs to talk to Keycloak, but it doesn't support doing it internally. It wants to talk to Keycloak using https://keycloak.bigbang.dev. Because of that, we need to add a line to the CoreDNS ConfigMap and restart the CoreDNS deployment.
+- If you want to log into the admin console in Keycloak, navigate to https://keycloak.bigbang.dev/auth/admin and use the credentials `admin`/`sup3r-secret-p@ssword`.
