@@ -5,10 +5,6 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 5.0.0, < 6.0.0"
     }
-    cloudinit = {
-      source  = "terraform-providers/cloudinit"
-      version = ">= 2.0.0, < 3.0.0"
-    }
     random = {
       source  = "hashicorp/random"
       version = ">= 3.0.0, < 4.0.0"
