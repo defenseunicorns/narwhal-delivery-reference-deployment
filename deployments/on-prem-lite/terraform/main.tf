@@ -167,6 +167,7 @@ resource "aws_s3_bucket" "access_log_bucket" {
   tags          = local.tags
 
   lifecycle {
+    //noinspection HCLUnknownBlockType
     precondition {
       condition     = length(local.access_log_bucket_name_prefix) <= 37
       error_message = "Bucket name prefixes may not be longer than 37 characters."
@@ -184,14 +185,14 @@ module "server" {
     volume_size = 100
   }
   vpc_id                         = module.vpc.vpc_id
-  subnet_id                      = module.vpc.public_subnets[0]
+  subnet_id                      = module.vpc.private_subnets[0]
   region                         = var.region
   access_logs_bucket_name        = aws_s3_bucket.access_log_bucket.id
   kms_key_arn                    = aws_kms_key.default.arn
   session_log_bucket_name_prefix = "${local.name}-sessionlogs"
   ssh_user                       = "ec2-user"
   ssh_password                   = "password"
-  assign_public_ip               = true
+  assign_public_ip               = false
   tenancy                        = "default"
   zarf_version                   = "v0.29.0"
   tags                           = local.tags

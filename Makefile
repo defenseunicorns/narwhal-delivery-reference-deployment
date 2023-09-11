@@ -125,7 +125,7 @@ endif
 		&& terraform destroy -auto-approve'
 
 .PHONY: on-prem-lite-start-session
-on-prem-lite-start-session: _create-folders #_# Start a session on the on-prem-lite server
+on-prem-lite-start-session: _create-folders ## Start a session on the on-prem-lite server
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
@@ -138,7 +138,7 @@ endif
 # On Mac there's no good way to install sshpass. Enter the password yourself ya lazy bum. The password is "password".
 # Make sure you have the stuff you need installed (sshuttle, ssh, AWS CLI, session manager plugin, etc)
 .PHONY: on-prem-lite-start-sshuttle
-on-prem-lite-start-sshuttle: _create-folders #_# Start an Sshuttle session with the on-prem-lite server
+on-prem-lite-start-sshuttle: _create-folders ## Start an Sshuttle connection with the on-prem-lite server
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
@@ -393,14 +393,8 @@ docker-save-build-harness: _create-folders #_# Save the build-harness docker ima
 docker-load-build-harness: #_# Load the build-harness docker image from the .cache folder
 	docker load -i .cache/docker/build-harness.tar
 
-.PHONY: _runhooks
-_runhooks: _create-folders #_# [internal] Run pre-commit hooks
-	docker run ${ALL_THE_DOCKER_ARGS} \
-	bash -c 'git config --global --add safe.directory /app \
-		&& pre-commit run -a --show-diff-on-failure $(HOOK)'
-
 .PHONY: pre-commit-all
-pre-commit-all: #_# Run all pre-commit hooks
+pre-commit-all: ## Run all pre-commit hooks
 	$(MAKE) _runhooks HOOK="" SKIP=""
 
 .PHONY: pre-commit-terraform
@@ -426,3 +420,9 @@ fix-cache-permissions: #_# Fix permissions on the .cache folder
 .PHONY: autoformat
 autoformat: #_# Autoformat all files
 	$(MAKE) _runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,check-yaml,golangci-lint,terraform_checkov,terraform_tflint,renovate-config-validator"
+
+.PHONY: _runhooks
+_runhooks: _create-folders #_# [internal] Helper "function" for running pre-commits
+	docker run ${ALL_THE_DOCKER_ARGS} \
+	bash -c 'git config --global --add safe.directory /app \
+		&& pre-commit run -a --show-diff-on-failure $(HOOK)'

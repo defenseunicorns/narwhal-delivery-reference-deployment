@@ -18,13 +18,13 @@ The following is a list of everything that goes into this deployment. Each item 
 
 This reference deployment uses several components that are still in the early stages of development. As such, this reference deployment should be considered to be at the "Experimental" maturity level.
 
-| Component                                                         | Maturity Level   | Notes                                                                                                                   |
-|-------------------------------------------------------------------|------------------|-------------------------------------------------------------------------------------------------------------------------|
-| [Zarf](https://github.com/defenseunicorns/zarf)                   | Late-Stage Beta  | We are comfortable using Zarf in production, despite its v0.X status.                                                   |
-| [MetalLB](https://github.com/defenseunicorns/uds-package-metallb) | Experimental     | The Zarf Package for MetalLB is very new and does not yet meet our qualifications for being used in production.         |
-| [DUBBD](https://github.com/defenseunicorns/uds-package-dubbd)     | Mid-Stage Beta   | We intend to use DUBBD in production, but are anticipating a lot of churn which will likely cause some pain.            |
-| [IDAM](https://github.com/defenseunicorns/uds-idam)               | Early-Stage Beta | We intend to use the IDAM package in production, but are anticipating a lot of churn which will likely cause some pain. |
-| [SSO](https://github.com/defenseunicorns/uds-sso)                 | Early-Stage Beta | We intend to use the SSO package in production, but are anticipating a lot of churn which will likely cause some pain.  |
+| Component                                                         | Maturity Level   | Notes                                                                                                                                 |
+|-------------------------------------------------------------------|------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| [Zarf](https://github.com/defenseunicorns/zarf)                   | Late-Stage Beta  | We are comfortable using Zarf in production, despite its v0.X status.                                                                 |
+| [MetalLB](https://github.com/defenseunicorns/uds-package-metallb) | Experimental     | The Zarf Package for MetalLB is very new and does not yet meet our qualifications for being used in production.                       |
+| [DUBBD](https://github.com/defenseunicorns/uds-package-dubbd)     | Mid-Stage Beta   | We intend to use DUBBD in production at some point, but are anticipating a lot of churn which will likely cause some pain.            |
+| [IDAM](https://github.com/defenseunicorns/uds-idam)               | Early-Stage Beta | We intend to use the IDAM package in production at some point, but are anticipating a lot of churn which will likely cause some pain. |
+| [SSO](https://github.com/defenseunicorns/uds-sso)                 | Early-Stage Beta | We intend to use the SSO package in production at some point, but are anticipating a lot of churn which will likely cause some pain.  |
 
 ## Prerequisites
 
@@ -76,7 +76,7 @@ Then:
 
 14. Run Sshuttle with `sudo -E make on-prem-lite-start-sshuttle`. This is a blocking command that will run until you CTRL-C it.
     > **NOTES:**
-    > - Sshuttle is fickle. We've done our best to make it easy to use, but it is still a pain in the ass.
+    > - Sshuttle is fickle. We've done our best to make it easy to use, but it is still a pain in the ass. Please open an issue in this repo if you have trouble with Sshuttle.
     > - Because `ssh` is used as the connection mechanism you will be prompted for the server's password. The password is "password". The password doesn't need to be changed and isn't a security issue if it gets out since the SSH port is not exposed and Session Manager is needed to connect to the server.
 15. Open a browser and go to https://podinfo.bigbang.dev. If everything worked successfully it should redirect you and show the Keycloak login page. This concludes the guided deployment.
 
@@ -92,4 +92,4 @@ The following is some notes and a list of "gotchas" that frequently act as speed
 - To get Pepr to configure AuthService to sit in front of an app, the label `protect: keycloak` must be added to the pod(s). The most common/likely way to do this is in the Deployment manifest, in `spec.template.metadata.labels`. If this label is not present, Pepr will not configure AuthService to sit in front of the app.
 - DUBBD requires TLSv1.3 or better. The versions of `curl` and `openssl` that are present in Amazon Linux 2 do not support TLSv1.3.
 - Pepr needs to talk to Keycloak, but it doesn't support doing it internally. It wants to talk to Keycloak using https://keycloak.bigbang.dev. Because of that, we need to add a line to the CoreDNS ConfigMap and restart the CoreDNS deployment.
-- If you want to log into the admin console in Keycloak, navigate to https://keycloak.bigbang.dev/auth/admin and use the credentials `admin`/`sup3r-secret-p@ssword`.
+- If you want to log into the admin console in Keycloak, navigate to https://keycloak.bigbang.dev/auth/admin and use the credentials `admin`/`sup3r-secret-p@ssword`. NEVER USE THE DEFAULT PASSWORD IN NON-DEMO DEPLOYMENTS. The variable to change the password is `KC_ADM_PASSWORD` when deploying the `uds-idam` package.
