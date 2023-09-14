@@ -51,38 +51,32 @@ Follow these steps to deploy this reference deployment. These are the same steps
 > **WARNING:** This will modify your local /etc/hosts file. You should make a backup of that file before doing this in case something gets screwed up.
 
 1. Clone this repo and `cd` into it
-
-Then either:
-
-2. Bring it all up with `sudo -E make on-prem-lite-up`
-
-Or:
-
-2. Initialize Terraform with `make on-prem-lite-terraform-init`
-3. [Optional] Inspect the Terraform plan with `make on-prem-lite-terraform-plan`
-4. Deploy the EC2 instance with `make on-prem-lite-terraform-apply`
-5. Wait a couple of minutes for the instance to finish running its user data script
-6. Create the K3s cluster and initialize Zarf with `make on-prem-lite-zarf-init`
-7. Deploy MetalLB with `make on-prem-lite-deploy-metallb`
-8. Deploy DUBBD with `make on-prem-lite-deploy-dubbd`
-9. Deploy the IDAM package with `make on-prem-lite-deploy-idam`
-10. Deploy the SSO package with `make on-prem-lite-deploy-sso`
-11. Update the /etc/hosts file on the server with `make on-prem-lite-update-server-etc-hosts`
-12. Update the /etc/hosts file on the local machine with `sudo -E make on-prem-lite-update-local-etc-hosts`
-13. Update the CoreDNS configmap and restart the deployment with `make on-prem-lite-update-coredns-config`
-13. Deploy the Mission App (Podinfo) with `make on-prem-lite-deploy-mission-app`
-
-Then:
-
-14. Run Sshuttle with `sudo -E make on-prem-lite-start-sshuttle`. This is a blocking command that will run until you CTRL-C it.
+2. Bring it all up with `make on-prem-lite-up`
+    > Alternatively, you can do it all yourself. The targets here that start with an underscore use Docker. If for some reason you don't want to use Docker you can run the corresponding target that starts with a plus sign instead of an underscore.
+    > 1. Initialize Terraform with `make _on-prem-lite-terraform-init`
+    > 2. [Optional] Inspect the Terraform plan with `make _on-prem-lite-terraform-plan`
+    > 3. Deploy the EC2 instance with `make _on-prem-lite-terraform-apply`
+    > 4. Wait a couple of minutes for the instance to finish running its user data script. There's a `make +sleep180` target that you can run that will sleep for 180 seconds.
+    > 5. Create the K3s cluster and initialize Zarf with `make _on-prem-lite-zarf-init`
+    > 6. Deploy MetalLB with `make _on-prem-lite-deploy-metallb`
+    > 7. Deploy DUBBD with `make _on-prem-lite-deploy-dubbd`
+    > 8. Deploy the IDAM package with `make _on-prem-lite-deploy-idam`
+    > 9. Deploy the SSO package with `make _on-prem-lite-deploy-sso`
+    > 10. Update the /etc/hosts file on the server with `make _on-prem-lite-update-server-etc-hosts`
+    > 11. Update the CoreDNS configmap and restart the deployment with `make _on-prem-lite-update-coredns-config`
+    > 12. Deploy the Mission App (Podinfo) with `make _on-prem-lite-deploy-mission-app`
+3. Make a backup of your local /etc/hosts file in case anything gets messed up.
+4. Update the /etc/hosts file on the local machine with `sudo -E make on-prem-lite-update-local-etc-hosts`.
+5. Run Sshuttle with `sudo -E make on-prem-lite-start-sshuttle`. This is a blocking command that will run until you CTRL-C it.
     > **NOTES:**
     > - Sshuttle is fickle. We've done our best to make it easy to use, but it is still a pain in the ass. Please open an issue in this repo if you have trouble with Sshuttle.
     > - Because `ssh` is used as the connection mechanism you will be prompted for the server's password. The password is "password". The password doesn't need to be changed and isn't a security issue if it gets out since the SSH port is not exposed and Session Manager is needed to connect to the server.
-15. Open a browser and go to https://podinfo.bigbang.dev. If everything worked successfully it should redirect you and show the Keycloak login page. This concludes the guided deployment.
+6. Open a browser and go to https://podinfo.bigbang.dev. If everything worked successfully it should redirect you and show the Keycloak login page. This concludes the guided deployment.
 
 When you're done:
 
-16. To teardown, run `sudo -E make on-prem-lite-down`.
+1. Cleanup your local /etc/hosts file with `sudo -E make on-prem-lite-rollback-local-etc-hosts`
+2. Destroy the server with `make on-prem-lite-down`.
 
 ## Notes
 
