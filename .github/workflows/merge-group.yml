@@ -4,7 +4,6 @@ name: merge-group-test
 
 on:
   merge_group:
-  pull_request:
 
 permissions:
   id-token: write
