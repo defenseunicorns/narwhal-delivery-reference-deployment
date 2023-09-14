@@ -2,6 +2,8 @@ include .env
 
 .DEFAULT_GOAL := help
 
+ZARF := zarf --no-progress --no-log-file
+
 # DRY is good.
 ALL_THE_DOCKER_ARGS := $(TTY_ARG) -it --rm \
 	--cap-add=NET_ADMIN \
@@ -352,7 +354,7 @@ endif
 			--target $$(terraform output -raw server_id) \
 			--document-name AWS-StartInteractiveCommand \
 			--parameters command='[" \
-				sudo /usr/local/bin/zarf init \
+				sudo /usr/local/bin/$(ZARF) init \
 					--components=k3s,git-server \
 					--set K3S_ARGS=\"--disable traefik,servicelb\" \
 					--confirm \
@@ -370,7 +372,7 @@ endif
 			--target $$(terraform output -raw server_id) \
 			--document-name AWS-StartInteractiveCommand \
 			--parameters command='[" \
-				sudo /usr/local/bin/zarf package deploy \
+				sudo /usr/local/bin/$(ZARF) package deploy \
 					oci://ghcr.io/defenseunicorns/packages/metallb:${METALLB_VERSION}-amd64 \
 					--set IP_ADDRESS_POOL=10.0.255.0/24 \
 					--confirm \
@@ -389,7 +391,7 @@ endif
 			--target $$(terraform output -raw server_id) \
 			--document-name AWS-StartInteractiveCommand \
 			--parameters command='[" \
-				sudo /usr/local/bin/zarf package deploy \
+				sudo /usr/local/bin/$(ZARF) package deploy \
 					oci://ghcr.io/defenseunicorns/packages/dubbd-k3d:${DUBBD_VERSION}-amd64 \
 					--set=APPROVED_REGISTRIES=\"127.0.0.1* | ghcr.io/defenseunicorns/pepr* | ghcr.io/stefanprodan* | registry1.dso.mil\" \
 					--confirm \
@@ -407,7 +409,7 @@ endif
 			--target $$(terraform output -raw server_id) \
 			--document-name AWS-StartInteractiveCommand \
 			--parameters command='[" \
-				sudo /usr/local/bin/zarf package deploy \
+				sudo /usr/local/bin/$(ZARF) package deploy \
 					oci://ghcr.io/defenseunicorns/uds-capability/uds-idam:${IDAM_VERSION}-amd64 \
 					--confirm \
 				&& echo \"EXITCODE: 0\" \
@@ -424,7 +426,7 @@ endif
 			--target $$(terraform output -raw server_id) \
 			--document-name AWS-StartInteractiveCommand \
 			--parameters command='[" \
-				sudo /usr/local/bin/zarf package deploy \
+				sudo /usr/local/bin/$(ZARF) package deploy \
 					oci://ghcr.io/defenseunicorns/uds-capability/uds-sso:${SSO_VERSION}-amd64 \
 					--confirm \
 				&& echo \"EXITCODE: 0\" \
@@ -486,7 +488,7 @@ endif
 			--target $$(terraform output -raw server_id) \
 			--document-name AWS-StartInteractiveCommand \
 			--parameters command='[" \
-				sudo /usr/local/bin/zarf package deploy \
+				sudo /usr/local/bin/$(ZARF) package deploy \
 					oci://ghcr.io/defenseunicorns/narwhal-delivery-zarf-package-podinfo/podinfo:${MISSION_APP_VERSION}-amd64 \
 					--confirm \
 					-l debug \
@@ -504,7 +506,7 @@ endif
 			--target $$(terraform output -raw server_id) \
 			--document-name AWS-StartInteractiveCommand \
 			--parameters command='[" \
-				sudo /usr/local/bin/zarf destroy \
+				sudo /usr/local/bin/$(ZARF) destroy \
 					--remove-components \
 					--confirm \
 				&& echo \"EXITCODE: 0\" \
@@ -618,7 +620,7 @@ endif
 		--parameters command='[" \
 			START_TIME=$$(date +%s); \
 			while true; do \
-				if /usr/local/bin/zarf version; then \
+				if /usr/local/bin/$(ZARF) version; then \
 					echo \"EXITCODE: 0\"; \
 					exit 0; \
 				fi; \
