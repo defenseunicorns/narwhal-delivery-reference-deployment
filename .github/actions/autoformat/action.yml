@@ -79,7 +79,11 @@ runs:
       shell: bash -e -o pipefail {0}
       run: |
         # Make it always return 0 since changing files is considered a failure by pre-commit
-        make _autoformat _fix-cache-permissions || true
+        make +scriptwrap TARGET=_autoformat || true
+
+    - name: Fix cache permissions
+      shell: bash -e -o pipefail {0}
+      run: make +scriptwrap TARGET=_fix-cache-permissions
 
     - name: Commit and push changes
       uses: stefanzweifel/git-auto-commit-action@v4

@@ -111,7 +111,7 @@ runs:
 
     - name: "Fix cache permissions"
       shell: bash -e -o pipefail {0}
-      run: make _fix-cache-permissions
+      run: make +scriptwrap TARGET=_fix-cache-permissions
 
     # Update GitHub status for successful pipeline run
     - name: "Update GitHub Status for success"
