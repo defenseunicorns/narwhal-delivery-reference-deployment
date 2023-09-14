@@ -49,4 +49,8 @@
 
       - name: Run `pre-commit run -a`
         shell: bash -e -o pipefail {0}
-        run: "make _pre-commit-${{inputs.check-type}} _fix-cache-permissions"
+        run: "make +scriptwrap TARGET=_pre-commit-${{inputs.check-type}}"
+
+      - name: Fix cache permissions
+        shell: bash -e -o pipefail {0}
+        run: "make +scriptwrap TARGET=_fix-cache-permissions"
