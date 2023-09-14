@@ -26,5 +26,6 @@ jobs:
         with:
           token: ${{ secrets.PAT }}
           role-to-assume: ${{ secrets.AWS_COMMERCIAL_ROLE_TO_ASSUME }}
+          region: us-east-1
           github-context: "test / e2e-on-prem-lite"
           test-to-run: "on-prem-lite"

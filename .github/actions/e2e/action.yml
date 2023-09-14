@@ -9,6 +9,9 @@ inputs:
   role-to-assume:
     description: The AWS IAM Role to assume in the target account
     required: true
+  region:
+    description: Any valid region in the target account. Only used to get AWS creds, not for the test itself.
+    required: true
   github-context:
     description: The GitHub Status Context to use when updating the status
     required: true
