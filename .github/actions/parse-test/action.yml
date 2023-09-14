@@ -8,7 +8,7 @@ outputs:
     value: ${{ steps.parse.outputs.ping }}
   run-e2e-on-prem-lite:
     description: Will be 'true' if the 'e2e_on-prem-lite' job should run
-    value: ${{ steps.parse.outputs.e2e_on-prem-lite }}
+    value: ${{ steps.parse.outputs.e2e_on_prem_lite }}
 runs:
   using: composite
   steps:
