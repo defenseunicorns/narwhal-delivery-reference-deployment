@@ -640,6 +640,10 @@ endif
 			done; \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
+.PHONY: +scriptwrap
++scriptwrap: #+# Wrap a target in the `script` command to simulate a TTY
+	script -q -e -c '$(MAKE) $(TARGET)' /dev/null
+
 .PHONY: +runhooks
 +runhooks: +create-folders #+# Helper "function" for running pre-commits
 	docker run ${ALL_THE_DOCKER_ARGS} \

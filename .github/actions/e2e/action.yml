@@ -107,7 +107,7 @@ runs:
     - name: "Run E2E tests"
       shell: bash -o pipefail {0}
       # Stand up the deployment, then run the test, then clean up. Fail the step if any of the commands fail.
-      run: make _test-on-prem-lite
+      run: make +scriptwrap TARGET=_test-on-prem-lite
 
     - name: "Fix cache permissions"
       shell: bash -e -o pipefail {0}
