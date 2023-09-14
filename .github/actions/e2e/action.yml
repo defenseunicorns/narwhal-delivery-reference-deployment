@@ -74,12 +74,12 @@ runs:
       if: steps.init-docker-cache.outputs.cache-hit != 'true'
       shell: bash -e -o pipefail {0}
       run: |
-        make docker-save-build-harness
+        make _docker-save-build-harness
 
     - name: Load build harness
       shell: bash -e -o pipefail {0}
       run: |
-        make docker-load-build-harness
+        make _docker-load-build-harness
 
     - name: Get Terraform version from .tool-versions
       id: get_tf_version
