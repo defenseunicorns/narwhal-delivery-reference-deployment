@@ -2,14 +2,8 @@ include .env
 
 .DEFAULT_GOAL := help
 
-# Optionally add the "-it" flag for docker run commands if the env var "CI" is not set (meaning we are on a local machine and not in github actions)
-TTY_ARG :=
-ifndef CI
-	TTY_ARG := -it
-endif
-
 # DRY is good.
-ALL_THE_DOCKER_ARGS := $(TTY_ARG) --rm \
+ALL_THE_DOCKER_ARGS := $(TTY_ARG) -it --rm \
 	--cap-add=NET_ADMIN \
 	--cap-add=NET_RAW \
 	-v "${PWD}:/app" \
@@ -116,18 +110,6 @@ endif
 	[[ $$FAILURE -eq 0 ]] && make +on-prem-lite-go-test || FAILURE=1; \
 	make on-prem-lite-down || FAILURE=1; \
 	exit $$FAILURE; \
-
-.PHONY: +on-prem-lite-go-test
-+on-prem-lite-go-test: #+# [Docker] Run the E2E test for the on-prem-lite deployment
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	echo "Starting test run. You may not see any output for a bit."
-	docker run -v /var/run/docker.sock:/var/run/docker.sock ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-start-sshuttle-in-background \
-			&& make +on-prem-lite-update-local-etc-hosts \
-			&& cd test/e2e \
-			&& go test -count 1 -v -timeout 2h -run TestOnPremLite'
 
 .PHONY: _on-prem-lite-terraform-init
 _on-prem-lite-terraform-init: +create-folders #_# [Docker] Run terraform init on the on-prem-lite infra
@@ -304,6 +286,18 @@ _fix-cache-permissions: #_# [Docker] Fix permissions on the .cache folder
 .PHONY: _autoformat
 _autoformat: #_# [Docker] Autoformat all files
 	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,check-yaml,golangci-lint,terraform_checkov,terraform_tflint,renovate-config-validator"
+
+.PHONY: +on-prem-lite-go-test
++on-prem-lite-go-test: #+# [Docker] Run the E2E test for the on-prem-lite deployment
+ifndef AWS_ACCESS_KEY_ID
+	$(error AWS CLI environment variables are not set)
+endif
+	echo "Starting test run. You may not see any output for a bit."
+	docker run -v /var/run/docker.sock:/var/run/docker.sock ${ALL_THE_DOCKER_ARGS} \
+		bash -c 'make +on-prem-lite-start-sshuttle-in-background \
+			&& make +on-prem-lite-update-local-etc-hosts \
+			&& cd test/e2e \
+			&& go test -count 1 -v -timeout 2h -run TestOnPremLite'
 
 .PHONY: +on-prem-lite-up
 +on-prem-lite-up: #+# Full on-prem-lite deployment
