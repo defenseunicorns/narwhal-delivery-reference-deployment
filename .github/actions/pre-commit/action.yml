@@ -41,12 +41,12 @@
       - name: Docker save build harness
         if: steps.init-docker-cache.outputs.cache-hit != 'true'
         shell: bash -e -o pipefail {0}
-        run: make docker-save-build-harness
+        run: make _docker-save-build-harness
 
       - name: Load build harness
         shell: bash -e -o pipefail {0}
-        run: make docker-load-build-harness
+        run: make _docker-load-build-harness
 
       - name: Run `pre-commit run -a`
         shell: bash -e -o pipefail {0}
-        run: "make pre-commit-${{inputs.check-type}} fix-cache-permissions"
+        run: "make _pre-commit-${{inputs.check-type}} _fix-cache-permissions"
