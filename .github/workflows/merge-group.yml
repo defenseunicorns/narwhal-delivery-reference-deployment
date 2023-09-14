@@ -18,7 +18,6 @@ defaults:
 jobs:
   e2e-on-prem-lite:
     runs-on: ubuntu-latest
-    needs: parse
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
