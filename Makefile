@@ -2,6 +2,8 @@ include .env
 
 .DEFAULT_GOAL := help
 
+SHELL := /bin/bash
+
 ZARF := zarf --no-progress --no-log-file
 
 # DRY is good.
