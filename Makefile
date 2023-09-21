@@ -444,7 +444,7 @@ endif
 		--target $(shell cd deployments/on-prem-lite/terraform && terraform output -raw server_id) \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			echo \"$(shell base64 scripts/on-prem-lite/update-server-etc-hosts.sh)\" | sudo tee /root/update-server-etc-hosts.b64 \
+			echo \"$(shell base64 scripts/on-prem-lite/update-server-etc-hosts.sh | tr -d "\n")\" | sudo tee /root/update-server-etc-hosts.b64 \
 			&& sudo base64 -d /root/update-server-etc-hosts.b64 | sudo tee /root/update-server-etc-hosts.sh \
 			&& sudo chmod +x /root/update-server-etc-hosts.sh \
 			&& sudo /root/update-server-etc-hosts.sh \
@@ -514,13 +514,14 @@ endif
 				&& echo \"EXITCODE: 0\" \
 			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
+# Potentially running terraform destroy twice because of https://github.com/defenseunicorns/terraform-aws-uds-bastion/issues/47
 .PHONY: +on-prem-lite-terraform-destroy
 +on-prem-lite-terraform-destroy: #+# Run terraform destroy on the on-prem-lite infra
 ifndef AWS_ACCESS_KEY_ID
 	$(error AWS CLI environment variables are not set)
 endif
 	cd deployments/on-prem-lite/terraform \
-		&& terraform destroy -auto-approve
+		&& terraform destroy -auto-approve || terraform destroy -auto-approve
 
 .PHONY: +on-prem-lite-start-sshuttle-in-background
 +on-prem-lite-start-sshuttle-in-background: #+# Start Sshuttle in the background.
