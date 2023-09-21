@@ -623,7 +623,7 @@ endif
 		--parameters command='[" \
 			START_TIME=$$(date +%s); \
 			while true; do \
-				if /usr/local/bin/$(ZARF) version; then \
+				if /usr/bin/$(ZARF) version; then \
 					echo \"EXITCODE: 0\"; \
 					exit 0; \
 				fi; \
