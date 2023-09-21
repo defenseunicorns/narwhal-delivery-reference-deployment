@@ -301,6 +301,7 @@ endif
 		bash -c 'make +on-prem-lite-start-sshuttle-in-background \
 			&& make +on-prem-lite-update-local-etc-hosts \
 			&& cd test/e2e \
+			&& sleep 10 \
 			&& go test -count 1 -v -timeout 2h -run TestOnPremLite'
 
 .PHONY: +on-prem-lite-up
