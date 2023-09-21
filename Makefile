@@ -444,7 +444,7 @@ endif
 		--target $(shell cd deployments/on-prem-lite/terraform && terraform output -raw server_id) \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			echo \"$(shell base64 scripts/on-prem-lite/update-server-etc-hosts.sh)\" | sudo tee /root/update-server-etc-hosts.b64 \
+			echo \"$(shell base64 scripts/on-prem-lite/update-server-etc-hosts.sh | tr -d "\n")\" | sudo tee /root/update-server-etc-hosts.b64 \
 			&& sudo base64 -d /root/update-server-etc-hosts.b64 | sudo tee /root/update-server-etc-hosts.sh \
 			&& sudo chmod +x /root/update-server-etc-hosts.sh \
 			&& sudo /root/update-server-etc-hosts.sh \
