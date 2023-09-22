@@ -414,6 +414,7 @@ endif
 			--parameters command='[" \
 				sudo $(ZARF) package deploy \
 					oci://ghcr.io/defenseunicorns/uds-capability/uds-idam:${IDAM_VERSION}-amd64 \
+					--set=KEYCLOAK_DEV_DB_ENABLED=true \
 					--confirm \
 				&& echo \"EXITCODE: 0\" \
 			"]' | tee /dev/tty | grep -q "EXITCODE: 0"

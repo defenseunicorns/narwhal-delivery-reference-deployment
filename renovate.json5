@@ -75,14 +75,6 @@
       matchDepTypes: ["module"],
       matchDatasources: ["github-tags", "git-tags"],
       versioning: "loose"
-    },
-    {
-      matchPackageNames: ["defenseunicorns/uds-idam"],
-      groupName: "uds-idam",
-    },
-    {
-      excludePackageNames: ["defenseunicorns/uds-idam"],
-      groupName: "stable"
     }
   ]
 }
