@@ -85,10 +85,67 @@ runs:
       shell: bash -e -o pipefail {0}
       run: make +scriptwrap TARGET=_fix-cache-permissions
 
+    # Use the GraphQL API to commit changes, so we get automatic commit signing
+    # The REST contents API can't be used as easily because it only supports making single file commits
     - name: Commit and push changes
-      uses: stefanzweifel/git-auto-commit-action@v4
-      with:
-        skip_checkout: true
+      shell: bash
+      env:
+       GITHUB_TOKEN: ${{ github.token }}
+      run: |
+       set -euo pipefail
+       additions=()
+       removed=()
+       while IFS= read -r -d $'\0' status_line; do
+           filename="${status_line:3}"
+           git_status="${status_line:0:2}"
+           if [ "$git_status" = "D " ]; then
+               removed+=("$filename")
+           else
+               additions+=("$filename")
+           fi
+       done < <(git status --porcelain=v1 -z)
+       if [ "${#additions[@]}" -eq 0 ] ; then
+         echo "No files updated, skipping commit"
+         exit 0
+       fi
+       commitMessage="chore: apply automatic changes"
+       # for now, we ignore $removed files, but they could be handled similarly (it's just harder to send two lists of positional input files into jq)
+       # jq's iteration over inputs will skip over files with 0 lines (empty files)
+       jq \
+         --null-input \
+         --raw-input \
+         --arg repositoryNameWithOwner "$GITHUB_REPOSITORY" \
+         --arg branchName "$GITHUB_REF_NAME" \
+         --arg expectedHeadOid "$GITHUB_SHA" \
+         --arg commitMessage "$commitMessage" \
+         '
+       {
+         "query": "mutation ($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
+         "variables": {
+           "input": {
+             "branch": {
+               "repositoryNameWithOwner": $repositoryNameWithOwner,
+               "branchName": $branchName
+             },
+             "message": {
+               "headline": $commitMessage
+             },
+             "fileChanges": {
+               "additions": [reduce inputs as $line ({}; .[input_filename] += [$line]) | map_values(join("\n")) | to_entries[] | {path: .key, contents: .value | @base64}]
+             },
+             "expectedHeadOid": $expectedHeadOid
+           }
+         }
+       }' "${additions[@]}" | curl https://api.github.com/graphql \
+         --silent \
+         --fail-with-body \
+         --oauth2-bearer "$(gh auth token)" \
+         --data @-
+
+#    - name: Commit and push changes
+#      uses: stefanzweifel/git-auto-commit-action@v4
+#      with:
+#        skip_checkout: true
 
     # Update GitHub status for successful pipeline run
     - name: "Update GitHub Status for success"
