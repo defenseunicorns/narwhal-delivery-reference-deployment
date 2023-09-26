@@ -650,4 +650,3 @@ endif
 	docker run ${ALL_THE_DOCKER_ARGS} \
 	bash -c 'git config --global --add safe.directory /app \
 		&& pre-commit run -a --show-diff-on-failure $(HOOK)'
-
