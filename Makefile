@@ -6,6 +6,10 @@ SHELL := /bin/bash
 
 ZARF := zarf --no-progress --no-log-file
 
+ON_PREM_LITE_IP_ADDRESS_ADMIN_INGRESSGATEWAY := 10.0.255.0
+ON_PREM_LITE_IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY := 10.0.255.1
+ON_PREM_LITE_IP_ADDRESS_TENANT_INGRESSGATEWAY := 10.0.255.2
+
 # DRY is good.
 ALL_THE_DOCKER_ARGS := $(TTY_ARG) -it --rm \
 	--cap-add=NET_ADMIN \
@@ -230,30 +234,6 @@ endif
 	docker run ${ALL_THE_DOCKER_ARGS} \
 		bash -c 'make +on-prem-lite-destroy-cluster'
 
-.PHONY: _on-prem-lite-get-admin-ingressgateway-ip
-_on-prem-lite-get-admin-ingressgateway-ip: +create-folders #_# [Docker] Get the IP address of the admin-ingressgateway service
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-get-admin-ingressgateway-ip'
-
-.PHONY: _on-prem-lite-get-keycloak-ingressgateway-ip
-_on-prem-lite-get-keycloak-ingressgateway-ip: +create-folders #_# [Docker] Get the IP address of the keycloak-ingressgateway service
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-get-keycloak-ingressgateway-ip'
-
-.PHONY: _on-prem-lite-get-tenant-ingressgateway-ip
-_on-prem-lite-get-tenant-ingressgateway-ip: +create-folders #_# [Docker] Get the IP address of the tenant-ingressgateway service
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-get-tenant-ingressgateway-ip'
-
 .PHONY: _docker-save-build-harness
 _docker-save-build-harness: +create-folders #_# Save the build-harness docker image to the .cache folder
 	docker pull ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
@@ -377,7 +357,9 @@ endif
 			--parameters command='[" \
 				sudo $(ZARF) package deploy \
 					oci://ghcr.io/defenseunicorns/packages/metallb:${METALLB_VERSION}-amd64 \
-					--set IP_ADDRESS_POOL=10.0.255.0/24 \
+					--set=IP_ADDRESS_ADMIN_INGRESSGATEWAY=\"$(ON_PREM_LITE_IP_ADDRESS_ADMIN_INGRESSGATEWAY)\" \
+					--set=IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY=\"$(ON_PREM_LITE_IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY)\" \
+					--set=IP_ADDRESS_TENANT_INGRESSGATEWAY=\"$(ON_PREM_LITE_IP_ADDRESS_TENANT_INGRESSGATEWAY)\" \
 					--confirm \
 				&& echo \"EXITCODE: 0\" \
 			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
@@ -536,46 +518,16 @@ endif
 	sshuttle -D -e 'sshpass -p "password" ssh -q -o CheckHostIP=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="aws ssm --region $(shell cd deployments/on-prem-lite/terraform && terraform output -raw region) start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"' --dns --disable-ipv6 -vr ec2-user@$(shell cd deployments/on-prem-lite/terraform && terraform output -raw server_id) $(shell cd deployments/on-prem-lite/terraform && terraform output -raw vpc_cidr) 10.0.255.0/24
 
 .PHONY: +on-prem-lite-get-admin-ingressgateway-ip
-+on-prem-lite-get-admin-ingressgateway-ip: #_# Get the IP address of the admin-ingressgateway service
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo kubectl get svc admin-ingressgateway -n istio-system -o=jsonpath=\"{.status.loadBalancer.ingress[0].ip}\" \
-			"]' | sed "/session/d" | sed "/^$$/d" | tr -d "\\n"
++on-prem-lite-get-admin-ingressgateway-ip: #+# Get the IP address of the admin-ingressgateway service
+	echo -n "$(ON_PREM_LITE_IP_ADDRESS_ADMIN_INGRESSGATEWAY)"
 
 .PHONY: +on-prem-lite-get-keycloak-ingressgateway-ip
 +on-prem-lite-get-keycloak-ingressgateway-ip: #+# Get the IP address of the keycloak-ingressgateway service
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath=\"{.status.loadBalancer.ingress[0].ip}\" \
-			"]' | sed "/session/d" | sed "/^$$/d" | tr -d "\\n"
+	echo -n "$(ON_PREM_LITE_IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY)"
 
 .PHONY: +on-prem-lite-get-tenant-ingressgateway-ip
-+on-prem-lite-get-tenant-ingressgateway-ip: #_# Get the IP address of the tenant-ingressgateway service
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo kubectl get svc tenant-ingressgateway -n istio-system -o=jsonpath=\"{.status.loadBalancer.ingress[0].ip}\" \
-			"]' | sed "/session/d" | sed "/^$$/d" | tr -d "\\n"
++on-prem-lite-get-tenant-ingressgateway-ip: #+# Get the IP address of the tenant-ingressgateway service
+	echo -n "$(ON_PREM_LITE_IP_ADDRESS_TENANT_INGRESSGATEWAY)"
 
 .PHONY: +create-folders
 +create-folders: #+# Create the .cache folder structure
