@@ -7,8 +7,8 @@ SHELL := /bin/bash
 ZARF := zarf --no-progress --no-log-file
 
 ON_PREM_LITE_IP_ADDRESS_ADMIN_INGRESSGATEWAY := 10.0.255.0
-ON_PREM_LITE_IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY := 10.0.255.1
-ON_PREM_LITE_IP_ADDRESS_TENANT_INGRESSGATEWAY := 10.0.255.2
+ON_PREM_LITE_IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY := 10.0.255.2
+ON_PREM_LITE_IP_ADDRESS_TENANT_INGRESSGATEWAY := 10.0.255.1
 
 # DRY is good.
 ALL_THE_DOCKER_ARGS := $(TTY_ARG) -it --rm \
@@ -79,12 +79,9 @@ endif
 		bash -c 'make +on-prem-lite-terraform-destroy'
 
 .PHONY: on-prem-lite-update-local-etc-hosts
-on-prem-lite-update-local-etc-hosts: ## [Docker] Update the /etc/hosts file on the local machine
+on-prem-lite-update-local-etc-hosts: ## Update the /etc/hosts file on the local machine
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
-endif
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
 endif
 	chmod +x scripts/on-prem-lite/update-local-etc-hosts.sh && scripts/on-prem-lite/update-local-etc-hosts.sh
 
