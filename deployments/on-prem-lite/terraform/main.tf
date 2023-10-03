@@ -176,7 +176,7 @@ resource "aws_s3_bucket" "access_log_bucket" {
 }
 
 module "server" {
-  source        = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.5"
+  source        = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.8"
   name          = local.name
   ami_id        = data.aws_ami.amazonlinux2.id
   instance_type = var.instance_type
