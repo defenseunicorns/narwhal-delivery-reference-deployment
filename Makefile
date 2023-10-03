@@ -606,6 +606,7 @@ endif
 .PHONY: +update-cache
 +update-cache: +create-folders _docker-save-build-harness #+# Update the cache
 	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'pre-commit install --install-hooks \
+		bash -c 'git config --global --add safe.directory /app \
+			&& pre-commit install --install-hooks \
 			&&  go test -run=SomeTestNameThatIsntReal ./... \
 			&& (cd deployments/on-prem-lite/terraform && terraform init)'
