@@ -3,9 +3,6 @@ name: Update Slash Command Dispatch Comment
 description: Update Slash Command Dispatch comment with the run URL
 
 inputs:
-  token:
-    description: Personal Access Token (PAT) used to update the comment
-    required: false
   application_id:
     description: 'The GitHub App ID'
     required: false
