@@ -3,11 +3,6 @@ description: Configure Cache
 runs:
   using: composite
   steps:
-    - name: Init pre-commit cache
-      uses: actions/cache@v3
-      with:
-        path: "${{ github.workspace }}/.cache/pre-commit"
-        key: "pre-commit|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
     - name: Init gopath cache
       uses: actions/cache@v3
       with:
