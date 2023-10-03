@@ -21,6 +21,7 @@ ALL_THE_DOCKER_ARGS := $(TTY_ARG) -it --rm \
 	-v "${PWD}/.cache/.terraform.d/plugin-cache:/root/.terraform.d/plugin-cache" \
 	-v "${PWD}/.cache/.zarf-cache:/root/.zarf-cache" \
 	--workdir "/app" \
+	-e SKIP \
 	-e TF_LOG_PATH \
 	-e TF_LOG \
 	-e GOPATH=/root/go \
