@@ -69,19 +69,18 @@ runs:
         key: "zarf|${{ hashFiles('.env') }}"
     - name: restore docker cache
       if: inputs.action == 'restore'
-      id: init-docker-cache
+      id: restore-docker-cache
       uses: actions/cache/restore@v3
       with:
         path: "${{ github.workspace }}/.cache/docker"
         key: "docker|${{ hashFiles('.env') }}"
     - name: load build harness
-      if: inputs.action == 'restore' && steps.init-docker-cache.outputs.cache-hit == 'true'
+      if: inputs.action == 'restore' && steps.restore-docker-cache.outputs.cache-hit == 'true'
       shell: bash -e -o pipefail {0}
       run: |
         make _docker-load-build-harness
     - name: save docker cache
       if: inputs.action == 'save'
-      id: init-docker-cache
       uses: actions/cache/save@v3
       with:
         path: "${{ github.workspace }}/.cache/docker"
