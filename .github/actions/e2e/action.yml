@@ -71,10 +71,6 @@ runs:
       shell: bash -o pipefail {0}
       run: make +scriptwrap TARGET=_test-${{ inputs.test-to-run }}
 
-    - name: "Fix cache permissions"
-      shell: bash -e -o pipefail {0}
-      run: make +scriptwrap TARGET=_fix-cache-permissions
-
     # this is because the github installation token expires after an hour, non-configurable, sometimes the tests take longer than an hour
     # https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app
     - name: "Get token again"
