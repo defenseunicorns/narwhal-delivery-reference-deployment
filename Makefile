@@ -112,6 +112,7 @@ ifndef AWS_ACCESS_KEY_ID
 endif
 	FAILURE=0; \
 	$(MAKE) on-prem-lite-up || FAILURE=1; \
+	sleep 30; \
 	[[ $$FAILURE -eq 0 ]] && make +on-prem-lite-go-test || FAILURE=1; \
 	make on-prem-lite-down || FAILURE=1; \
 	exit $$FAILURE; \
