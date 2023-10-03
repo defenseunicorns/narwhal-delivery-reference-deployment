@@ -1,0 +1,45 @@
+name: Configure Cache
+description: Configure Cache
+runs:
+  using: composite
+  steps:
+    - name: Init pre-commit cache
+      uses: actions/cache@v3
+      with:
+        path: "${{ github.workspace }}/.cache/pre-commit"
+        key: "pre-commit|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
+    - name: Init gopath cache
+      uses: actions/cache@v3
+      with:
+        path: "${{ github.workspace }}/.cache/go"
+        key: "gopath|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
+    - name: Init gobuild cache
+      uses: actions/cache@v3
+      with:
+        path: "${{ github.workspace }}/.cache/go-build"
+        key: "gobuild|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
+    - name: Init zarf cache
+      uses: actions/cache@v3
+      with:
+        path: "${{ github.workspace }}/.cache/.zarf-cache"
+        key: "zarf|${{ hashFiles('.env') }}"
+    - name: Init docker cache
+      id: init-docker-cache
+      uses: actions/cache@v3
+      with:
+        path: "${{ github.workspace }}/.cache/docker"
+        key: "docker|${{ hashFiles('.env') }}"
+    - name: Docker save build harness
+      if: steps.init-docker-cache.outputs.cache-hit != 'true'
+      shell: bash -e -o pipefail {0}
+      run: |
+        make _docker-save-build-harness
+    - name: Load build harness
+      shell: bash -e -o pipefail {0}
+      run: |
+        make _docker-load-build-harness
+    - name: Init Terraform Cache
+      uses: actions/cache@v3
+      with:
+        path: "${{ github.workspace }}/.cache/.terraform.d/plugin-cache"
+        key: "${{ runner.os }}-terraform-plugins|${{ hashFiles('.env') }}"
