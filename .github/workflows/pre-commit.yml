@@ -4,9 +4,6 @@
 on:
   pull_request:
   merge_group:
-  push:
-    branches:
-      - main
 
 jobs:
   common:
@@ -14,13 +11,10 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Init Cache
+      - name: cache
         uses: ./.github/actions/cache
-      - name: Init pre-commit cache
-        uses: actions/cache@v3
         with:
-          path: "${{ github.workspace }}/.cache/pre-commit"
-          key: "pre-commit|common|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
+          action: restore
       - name: pre-commit
         uses: ./.github/actions/pre-commit
         with:
@@ -31,13 +25,10 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Init Cache
+      - name: cache
         uses: ./.github/actions/cache
-      - name: Init pre-commit cache
-        uses: actions/cache@v3
         with:
-          path: "${{ github.workspace }}/.cache/pre-commit"
-          key: "pre-commit|terraform|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
+          action: restore
       - name: pre-commit
         uses: ./.github/actions/pre-commit
         with:
@@ -48,13 +39,10 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Init Cache
+      - name: cache
         uses: ./.github/actions/cache
-      - name: Init pre-commit cache
-        uses: actions/cache@v3
         with:
-          path: "${{ github.workspace }}/.cache/pre-commit"
-          key: "pre-commit|golang|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
+          action: restore
       - name: pre-commit
         uses: ./.github/actions/pre-commit
         with:
@@ -65,13 +53,10 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Init Cache
+      - name: cache
         uses: ./.github/actions/cache
-      - name: Init pre-commit cache
-        uses: actions/cache@v3
         with:
-          path: "${{ github.workspace }}/.cache/pre-commit"
-          key: "pre-commit|renovate|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
+          action: restore
       - name: pre-commit
         uses: ./.github/actions/pre-commit
         with:

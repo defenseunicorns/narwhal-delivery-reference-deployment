@@ -15,6 +15,7 @@ ALL_THE_DOCKER_ARGS := $(TTY_ARG) -it --rm \
 	--cap-add=NET_ADMIN \
 	--cap-add=NET_RAW \
 	-v "${PWD}:/app" \
+	-v "${PWD}/.cache/pre-commit:/root/.cache/pre-commit" \
 	-v "${PWD}/.cache/tmp:/tmp" \
 	-v "${PWD}/.cache/go:/root/go" \
 	-v "${PWD}/.cache/go-build:/root/.cache/go-build" \
@@ -599,5 +600,12 @@ endif
 .PHONY: +runhooks
 +runhooks: +create-folders #+# Helper "function" for running pre-commits
 	docker run ${ALL_THE_DOCKER_ARGS} \
-	bash -c 'git config --global --add safe.directory /app \
+		bash -c 'git config --global --add safe.directory /app \
 		&& pre-commit run -a --show-diff-on-failure $(HOOK)'
+
+.PHONY: +update-cache
++update-cache: +create-folders _docker-save-build-harness #+# Update the cache
+	docker run ${ALL_THE_DOCKER_ARGS} \
+		bash -c 'pre-commit install --install-hooks \
+			&&  go test -run=SomeTestNameThatIsntReal ./... \
+			&& (cd deployments/on-prem-lite/terraform && terraform init)'

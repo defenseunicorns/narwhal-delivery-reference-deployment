@@ -1,40 +1,100 @@
-name: Configure Cache
-description: Configure Cache
+name: Restore Cache
+description: Restore Cache
+
+inputs:
+  action:
+    description: The action to take. Either "restore" or "save".
+    required: true
+
 runs:
   using: composite
   steps:
-    - name: Init gopath cache
-      uses: actions/cache@v3
+    - name: Validate input
+      shell: bash -e -o pipefail {0}
+      env:
+        # space-delimited strings. Example: VALID_ACTIONS: "foo bar baz"
+        VALID_ACTIONS: "restore save"
+      run: |
+        if [[ ! " $VALID_ACTIONS " =~ " ${{ inputs.action }} " ]]; then
+          echo "Invalid action input: '${{ inputs.action }}'. Valid inputs are: $VALID_ACTIONS."
+          exit 1
+          fi
+    - name: restore pre-commit-cache
+      if: inputs.action == 'restore'
+      uses: actions/cache/restore@v3
+      with:
+        path: "${{ github.workspace }}/.cache/pre-commit"
+        key: "pre-commit|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
+    - name: save pre-commit-cache
+      if: inputs.action == 'save'
+      uses: actions/cache/save@v3
+      with:
+        path: "${{ github.workspace }}/.cache/pre-commit"
+        key: "pre-commit|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
+    - name: restore gopath cache
+      if: inputs.action == 'restore'
+      uses: actions/cache/restore@v3
       with:
         path: "${{ github.workspace }}/.cache/go"
         key: "gopath|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
-    - name: Init gobuild cache
-      uses: actions/cache@v3
+    - name: save gopath cache
+      if: inputs.action == 'save'
+      uses: actions/cache/save@v3
+      with:
+        path: "${{ github.workspace }}/.cache/go"
+        key: "gopath|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
+    - name: restore gobuild cache
+      if: inputs.action == 'restore'
+      uses: actions/cache/restore@v3
       with:
         path: "${{ github.workspace }}/.cache/go-build"
         key: "gobuild|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
-    - name: Init zarf cache
-      uses: actions/cache@v3
+    - name: save gobuild cache
+      if: inputs.action == 'save'
+      uses: actions/cache/save@v3
+      with:
+        path: "${{ github.workspace }}/.cache/go-build"
+        key: "gobuild|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
+    - name: restore zarf cache
+      if: inputs.action == 'restore'
+      uses: actions/cache/restore@v3
       with:
         path: "${{ github.workspace }}/.cache/.zarf-cache"
         key: "zarf|${{ hashFiles('.env') }}"
-    - name: Init docker cache
+    - name: save zarf cache
+      if: inputs.action == 'save'
+      uses: actions/cache/save@v3
+      with:
+        path: "${{ github.workspace }}/.cache/.zarf-cache"
+        key: "zarf|${{ hashFiles('.env') }}"
+    - name: restore docker cache
+      if: inputs.action == 'restore'
       id: init-docker-cache
-      uses: actions/cache@v3
+      uses: actions/cache/restore@v3
       with:
         path: "${{ github.workspace }}/.cache/docker"
         key: "docker|${{ hashFiles('.env') }}"
-    - name: Docker save build harness
-      if: steps.init-docker-cache.outputs.cache-hit != 'true'
-      shell: bash -e -o pipefail {0}
-      run: |
-        make _docker-save-build-harness
-    - name: Load build harness
+    - name: load build harness
+      if: inputs.action == 'restore' && steps.init-docker-cache.outputs.cache-hit == 'true'
       shell: bash -e -o pipefail {0}
       run: |
         make _docker-load-build-harness
-    - name: Init Terraform Cache
-      uses: actions/cache@v3
+    - name: save docker cache
+      if: inputs.action == 'save'
+      id: init-docker-cache
+      uses: actions/cache/save@v3
+      with:
+        path: "${{ github.workspace }}/.cache/docker"
+        key: "docker|${{ hashFiles('.env') }}"
+    - name: restore terraform cache
+      if: inputs.action == 'restore'
+      uses: actions/cache/restore@v3
+      with:
+        path: "${{ github.workspace }}/.cache/.terraform.d/plugin-cache"
+        key: "${{ runner.os }}-terraform-plugins|${{ hashFiles('.env') }}"
+    - name: save terraform cache
+      if: inputs.action == 'save'
+      uses: actions/cache/save@v3
       with:
         path: "${{ github.workspace }}/.cache/.terraform.d/plugin-cache"
         key: "${{ runner.os }}-terraform-plugins|${{ hashFiles('.env') }}"

@@ -1,0 +1,29 @@
+# Do all the stuff we'd need to do so that we save caches on pushes to main
+
+on:
+  push:
+    branches:
+      - main
+
+defaults:
+  run:
+    shell: bash -e -o pipefail {0}
+
+jobs:
+  save-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: restore-cache
+        uses: ./.github/actions/cache
+        with:
+          action: restore
+      - name: update-cache
+        run: make +scriptwrap TARGET=+update-cache
+      - name: Fix cache permissions
+        run: make +scriptwrap TARGET=_fix-cache-permissions
+      - name: save-cache
+        uses: ./.github/actions/cache
+        with:
+          action: save
