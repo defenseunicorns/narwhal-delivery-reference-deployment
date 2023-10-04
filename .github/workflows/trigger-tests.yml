@@ -52,7 +52,7 @@ jobs:
           description: "Tests skipped because this is a pull_request event"
 
   test-exemption:
-    if: github.event_name == 'merge_group' || github.event_name == 'pull_request'
+    if: github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     outputs:
       # return 'false' if any files in the PR are not exempt, otherwise return 'true'
@@ -66,8 +66,8 @@ jobs:
       - name: changed-files
         uses: tj-actions/changed-files@v39
         with:
-          base_sha: ${{ github.event.pull_request.base.ref || github.event.merge_group.base_ref }}
-          sha: ${{ github.event.pull_request.head.ref || github.event.merge_group.head_ref }}
+          base_sha: ${{ github.event.merge_group.base_ref }}
+          sha: ${{ github.event.merge_group.head_ref }}
           fail_on_initial_diff_error: true
           fail_on_submodule_diff_error: true
           files_yaml: |
