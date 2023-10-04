@@ -1,4 +1,4 @@
-# narwhal-delivery-reference-deployment test
+# narwhal-delivery-reference-deployment
 
 This repo contains reference deployments that are intended to be able to be copy/pasted for mostly prod-ready Day Zero deployments. We intend for the deployments to be as close to production ready as possible, given the constraints of the reference deployment.
 
