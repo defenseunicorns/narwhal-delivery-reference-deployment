@@ -66,8 +66,8 @@ jobs:
       - name: changed-files
         uses: tj-actions/changed-files@v39
         with:
-          base_sha: ${{ github.event.merge_group.base_ref }}
-          sha: ${{ github.event.merge_group.head_ref }}
+          base_sha: ${{ github.event.merge_group.base_sha }}
+          sha: ${{ github.event.merge_group.head_sha }}
           fail_on_initial_diff_error: true
           fail_on_submodule_diff_error: true
           files_yaml: |
