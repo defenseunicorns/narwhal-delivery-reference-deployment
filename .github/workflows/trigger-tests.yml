@@ -58,6 +58,7 @@ jobs:
       # return 'false' if any files in the PR are not exempt, otherwise return 'true'
       is-exempt: ${{ steps.changed-files.outputs.not-exempt_any_changed == 'true' && 'false' || 'true' }}
     steps:
+      - uses: hmarr/debug-action@v2
       - name: checkout
         uses: actions/checkout@v4
         with:
@@ -67,6 +68,8 @@ jobs:
         with:
           base_sha: ${{ github.event.pull_request.base.ref || github.event.merge_group.base_ref }}
           sha: ${{ github.event.pull_request.head.ref || github.event.merge_group.head_ref }}
+          fail_on_initial_diff_error: true
+          fail_on_submodule_diff_error: true
           files_yaml: |
             not-exempt:
               - '**'
