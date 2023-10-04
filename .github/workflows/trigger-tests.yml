@@ -58,12 +58,12 @@ jobs:
       # return 'true' if any files in the PR are not exempt
       not-exempt: ${{ steps.changed-files.outputs.not-exempt_any_modified }}
     steps:
-      - uses: hmarr/debug-action@v2
       - name: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: changed-files
+        id: changed-files
         uses: tj-actions/changed-files@v39
         with:
           base_sha: ${{ github.event.merge_group.base_sha }}
@@ -74,6 +74,9 @@ jobs:
             not-exempt:
               - '**'
               - '!**/*.md'
+      - name: Show output
+        run: |
+          echo '${{ toJSON(steps.changed-files.outputs) }}'
 
   skip-tests-if-merge-group-event-and-exemption-criteria-met:
     needs: test-exemption
@@ -98,10 +101,12 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
-          application_id: ${{ secrets.NARWHAL_BOT_APP_ID }}
-          application_private_key: ${{ secrets.NARWHAL_BOT_SECRET }}
           repository: ${{ github.event.client_payload.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event.client_payload.pull_request.head.ref || github.ref_name }}
+      - name: cache
+        uses: ./.github/actions/cache
+        with:
+          action: restore
       - name: Run E2E Tests
         uses: ./.github/actions/e2e
         with:
