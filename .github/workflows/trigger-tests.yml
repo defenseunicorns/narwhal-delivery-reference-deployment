@@ -52,7 +52,7 @@ jobs:
           description: "Tests skipped because this is a pull_request event"
 
   test-exemption:
-    if: github.event_name == 'merge_group'
+    if: github.event_name == 'merge_group' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       # return 'false' if any files in the PR are not exempt, otherwise return 'true'
