@@ -55,8 +55,8 @@ jobs:
     if: github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     outputs:
-      # return 'false' if any files in the PR are not exempt, otherwise return 'true'
-      is-exempt: ${{ steps.changed-files.outputs.not-exempt_any_changed == 'true' && 'false' || 'true' }}
+      # return 'true' if any files in the PR are not exempt
+      not-exempt: ${{ steps.changed-files.outputs.not-exempt_any_modified }}
     steps:
       - uses: hmarr/debug-action@v2
       - name: checkout
@@ -77,7 +77,7 @@ jobs:
 
   skip-tests-if-merge-group-event-and-exemption-criteria-met:
     needs: test-exemption
-    if: github.event_name == 'merge_group' && needs.test-exemption.outputs.is-exempt == 'true'
+    if: github.event_name == 'merge_group' && needs.test-exemption.outputs.not-exempt != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: skip-tests-if-merge-group-event-and-exemption-criteria-met
@@ -92,7 +92,7 @@ jobs:
 
   test-e2e-on-prem-lite:
     needs: test-exemption
-    if: github.event_name == 'merge_group' && needs.test-exemption.outputs.is-exempt == 'false'
+    if: github.event_name == 'merge_group' && needs.test-exemption.outputs.not-exempt == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
