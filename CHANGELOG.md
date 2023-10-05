@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.0.2](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/compare/v0.0.1...v0.0.2) (2023-10-05)
+
+
+### Miscellaneous Chores
+
+* **deps:** update all dependencies ([#28](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/28)) ([dda7e9f](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/dda7e9ff355c43dbca1e82492283564fa593ca4f))
+* fix caching ([#35](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/35)) ([4f827dc](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/4f827dc8f73394bf370b04e2cd3181bbecc03411))
+* Fix pre commit cache and cache in main ([#33](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/33)) ([a6d05fa](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/a6d05fa0c8f2d8a77605e634e6c5783ecb56f114))
+* fix test exemption ([#34](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/34)) ([6ddff34](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/6ddff34d0ee992a775c7d3e8041f33fa5d2a3a51))
+* fix test-exemption job ([#36](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/36)) ([9d186bb](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/9d186bb56be185470f51da5284fea505a088d829))
+* fix test-exemption job ([#37](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/37)) ([6e5c7c8](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/6e5c7c84c0f9d851df44fd5bd68d7935a34075f4))
+* fix test-exemption job ([#38](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/38)) ([dd231cf](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/dd231cf666fd758684f98d7571ffc07796b09222))
+* fix typo in cache action ([daad06d](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/daad06de0956fc4ddea0ddc517a06cb074238d3d))
+* fix typo in cache action ([1c154c4](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/1c154c41b0d0c1f0ca4af2374fe5e90900b91f41))
+* switch to narwhal bot and update workflows ([#12](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/12)) ([ac27069](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/ac27069ada15c9c486176759f1eaeeb55b7c3207))
+
 ## 0.0.1 (2023-10-03)
 
 
