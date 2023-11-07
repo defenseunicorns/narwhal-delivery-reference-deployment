@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/compare/v0.0.2...v0.0.3) (2023-11-07)
+
+
+### Miscellaneous Chores
+
+* **deps:** update all dependencies ([#40](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/40)) ([89c1fdb](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/89c1fdb05066e96c01c0f9083b2c17c2ddcc75de))
+
 ## [0.0.2](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/compare/v0.0.1...v0.0.2) (2023-10-05)
 
 
