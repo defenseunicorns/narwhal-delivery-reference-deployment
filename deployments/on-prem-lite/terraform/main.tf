@@ -73,7 +73,7 @@ locals {
 }
 
 module "vpc" {
-  source                       = "git::https://github.com/defenseunicorns/terraform-aws-uds-vpc.git?ref=v0.0.5"
+  source                       = "git::https://github.com/defenseunicorns/terraform-aws-uds-vpc.git?ref=v0.1.3"
   name                         = local.name
   tags                         = local.tags
   vpc_cidr                     = var.vpc_cidr
@@ -176,7 +176,7 @@ resource "aws_s3_bucket" "access_log_bucket" {
 }
 
 module "server" {
-  source        = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.8"
+  source        = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.11"
   name          = local.name
   ami_id        = data.aws_ami.amazonlinux2.id
   instance_type = var.instance_type
