@@ -37,3 +37,9 @@ variable "use_unique_names" {
   description = "Whether to use unique names for all resources"
   default     = true
 }
+
+variable "zarf_version" {
+  type        = string
+  description = "Which version of Zarf to install on the server"
+  default     = "v0.31.3"
+}

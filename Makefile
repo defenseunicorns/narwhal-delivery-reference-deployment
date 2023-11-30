@@ -43,6 +43,9 @@ endif
 
 .PHONY: platform-up
 platform-up: ## Deploy the secure platform (MetalLB, DUBBD, IDAM, SSO)
+ifneq ($(shell id -u), 0)
+	$(error "This target must be run as root")
+endif
 	make _deploy-metallb \
 		_deploy-dubbd \
 		_deploy-idam \
