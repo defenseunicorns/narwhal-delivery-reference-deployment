@@ -3,6 +3,8 @@
 .DS_Store
 zarf-sbom/
 
+*.tar.zst
+
 # Local .terraform directories
 **/.terraform/*
 
