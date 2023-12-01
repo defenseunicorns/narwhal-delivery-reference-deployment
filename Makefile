@@ -116,7 +116,7 @@ _test-mission-app-up: #_# On the test server, build and deploy the mission app
 		--target $$SERVER_ID \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			cd ~/narwhal-delivery-reference-deployment \
+			cd ~/narwhal-delivery-reference-deployment/test \
 			&& git pull \
 			&& sudo make mission-app-up \
 			&& echo \"EXITCODE: 0\" \
@@ -263,6 +263,3 @@ endif
 _prereqs: #_# Run prerequisite checks
 	zarf tools kubectl get nodes > /dev/null || (echo "ERROR: unable to establish clean connection to the kubernetes cluster. If you don't have one yet and want one on the local (Linux) machine you can run 'sudo zarf init --components=k3s,git-server --set K3S_ARGS=\"--disable traefik,servicelb\" --confirm'" && exit 1)
 	zarf tools kubectl -n zarf get sts zarf-gitea > /dev/null || (echo "ERROR: the Zarf git-server was not found. Either Zarf was not initialized or it was initialized without the git-server component" && exit 1)
-	[ -f "test/zarf-config.yaml" ] > /dev/null || (echo "ERROR: file test/zarf-config.yaml not found." && exit 1)
-	[ -f "test/tls.cert" ] > /dev/null || (echo "ERROR: file test/tls.cert not found." && exit 1)
-	[ -f "test/tls.key" ] > /dev/null || (echo "ERROR: file test/tls.key not found. See zarf-config.example.yaml for instructions." && exit 1)
