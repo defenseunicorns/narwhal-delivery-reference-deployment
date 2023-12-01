@@ -88,7 +88,7 @@ _test-platform-up: #_# On the test server, set up the k8s cluster and UDS platfo
 		--target $$SERVER_ID \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			cd ~/narwwhal-delivery-reference-deployment/test \
+			cd ~/narwhal-delivery-reference-deployment/test \
 			&& git pull \
 			&& sudo make zarf-init platform-up \
 			&& echo \"EXITCODE: 0\" \
