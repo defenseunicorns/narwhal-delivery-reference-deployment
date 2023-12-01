@@ -212,7 +212,7 @@ ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
 	echo "Deploying MetalLB..."; \
- 	[ -f "zarf-package-metallb-amd64-${METALLB_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://086057210955.dkr.ecr.us-gov-west-1.amazonaws.com/defenseunicorns/packages/metallb:${METALLB_VERSION}-amd64; \
+ 	[ -f "zarf-package-metallb-amd64-${METALLB_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://ghcr.io/defenseunicorns/packages/metallb:${METALLB_VERSION}-amd64; \
  	$(ZARF) package deploy \
 		zarf-package-metallb-amd64-${METALLB_VERSION}.tar.zst \
 		--confirm
@@ -223,7 +223,7 @@ ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
 	echo "Deploying DUBBD..."; \
-	[ -f "zarf-package-dubbd-k3d-amd64-${DUBBD_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://086057210955.dkr.ecr.us-gov-west-1.amazonaws.com/defenseunicorns/packages/dubbd-k3d:${DUBBD_VERSION}-amd64; \
+	[ -f "zarf-package-dubbd-k3d-amd64-${DUBBD_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://ghcr.io/defenseunicorns/packages/dubbd-k3d:${DUBBD_VERSION}-amd64; \
  	$(ZARF) package deploy \
 		zarf-package-dubbd-k3d-amd64-${DUBBD_VERSION}.tar.zst \
 		--confirm
@@ -234,7 +234,7 @@ ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
 	echo "Deploying the IDAM package..."; \
- 	[ -f "zarf-package-uds-idam-amd64-${IDAM_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://086057210955.dkr.ecr.us-gov-west-1.amazonaws.com/defenseunicorns/uds-capability/uds-idam:${IDAM_VERSION}-amd64; \
+ 	[ -f "zarf-package-uds-idam-amd64-${IDAM_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://ghcr.io/defenseunicorns/uds-capability/uds-idam:${IDAM_VERSION}-amd64; \
  	$(ZARF) package deploy \
 		zarf-package-uds-idam-amd64-${IDAM_VERSION}.tar.zst \
 		--confirm \
@@ -245,7 +245,7 @@ ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
 	echo "Deploying the SSO package..."; \
-	[ -f "zarf-package-uds-sso-amd64-${SSO_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://086057210955.dkr.ecr.us-gov-west-1.amazonaws.com/defenseunicorns/uds-capability/uds-sso:${SSO_VERSION}-amd64; \
+	[ -f "zarf-package-uds-sso-amd64-${SSO_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://ghcr.io/defenseunicorns/uds-capability/uds-sso:${SSO_VERSION}-amd64; \
  	$(ZARF) package deploy \
 		zarf-package-uds-sso-amd64-${SSO_VERSION}.tar.zst \
 		--confirm \
