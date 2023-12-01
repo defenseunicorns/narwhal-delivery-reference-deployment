@@ -136,7 +136,7 @@ _test-mission-app-test: #_# On the test server, run the mission app tests
 		--parameters command='[" \
 			cd ~/narwhal-delivery-reference-deployment/test \
 			&& git pull \
-			&& chmod +x ./test-mission.app.sh \
+			&& chmod +x ./test-mission-app.sh \
 			&& ./test-mission-app.sh \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
