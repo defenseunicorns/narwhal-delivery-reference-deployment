@@ -1,0 +1,38 @@
+
+# IMPORTANT!!!!!!
+# ALL OF THESE VARIABLES NEED TO BE SET WITH YOUR ENVIRONMENT-SPECIFIC VALUES!
+# IF ANY OF THEM ARE NOT PRESENT, DEFAULT VALUES WILL BE USED WHICH AREN'T SECURE
+
+package:
+  deploy:
+    set:
+      # This is the set of IP addresses that MetalLB will use to assign to LoadBalancer services.
+      # Your networking topology must be such that traffic to these IP addresses ends up at the cluster. The cluster will then take care of deciding where that traffic goes.
+      # It must contain at least 3 addresses.
+      # Our recommendation is that it contain ONLY 3 addresses.
+      # The addresses may be specified using either of the following formats:
+      #    - A CIDR range, such as "10.0.0.0/30" (which ends up being 4 addresses, not ideal)
+      #    - An explicit start-end range, such as "10.0.0.1-10.0.0.3"
+      # Right now only 1 range is supported.
+      # If you'd like to use IP addresses that aren't "next to each other" please submit an issue here: https://github.com/defenseunicorns/uds-package-metallb
+      IP_ADDRESS_POOL: 10.0.255.1-10.0.255.3
+
+      # This value configures Kyverno's approved-registries policy.
+      # Setting this is a temporary measure until the policy is fixed such that it only looks at pods.
+      # See https://github.com/defenseunicorns/uds-package-dubbd/issues/549
+      # TODO: Stop setting this once the policy issue is fixed.
+      APPROVED_REGISTRIES: 127.0.0.1* | ghcr.io/defenseunicorns/pepr* | ghcr.io/stefanprodan* | registry1.dso.mil
+
+      # This tells Keycloak to use its internal database instead of an external one.
+      # If you'd like to use an external one, set this to "false" and set the other KEYCLOAK_* variables appropriately.
+      # See https://github.com/defenseunicorns/uds-idam#zarf-variables-configuration
+      KEYCLOAK_DEV_DB_ENABLED: "true"
+
+      # The domain to use. Will get used as the base for all deployments. For example, if DOMAIN is 'bigbang.dev' then keycloak will be listening at 'https://keycloak.bigbang.dev'
+      DOMAIN: bigbang.dev
+
+      # The files where the TLS cert and key live.
+      # Don't change these. Instead, create these files in this directory with the proper data in them. The filenames 'tls.cert' and 'tls.key' are in the .gitignore file so they won't be committed. Do not commit the TLS secret key to source control.
+      # See tls.example.cert and tls.example.key for examples of what these files should look like. The example files are the correct cert and key for the domain 'bigbang.dev'. NEVER USE BIGBANG.DEV WITH LIVE DATA. ITS TLS SECRET KEY HAS BEEN PASSED AROUND MORE THAN A HOLIDAY FRUITCAKE THAT NOBODY WANTS.
+      CERT_FILE: tls.cert
+      KEY_FILE: tls.key

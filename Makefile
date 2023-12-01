@@ -88,7 +88,7 @@ _test-platform-up: #_# On the test server, set up the k8s cluster and UDS platfo
 		--target $$SERVER_ID \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			cd /home/ssm-user/test \
+			cd ~/narwwhal-delivery-reference-deployment/test \
 			&& git pull \
 			&& sudo make zarf-init platform-up \
 			&& echo \"EXITCODE: 0\" \
@@ -116,7 +116,7 @@ _test-mission-app-up: #_# On the test server, build and deploy the mission app
 		--target $$SERVER_ID \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			cd /home/ssm-user/test \
+			cd ~/narwhal-delivery-reference-deployment \
 			&& git pull \
 			&& sudo make mission-app-up \
 			&& echo \"EXITCODE: 0\" \
@@ -201,8 +201,8 @@ _test-clone: #_# Clone the repo in the test instance so we can use it
 		--target $$(cd test/iac && terraform output -raw server_id) \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			rm -rf ~/test \
-			&& git clone -b $(BRANCH) $(REPO) ~/test \
+			rm -rf ~/narwhal-delivery-reference-deployment \
+			&& git clone -b $(BRANCH) $(REPO) ~/narwhal-delivery-reference-deployment \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
