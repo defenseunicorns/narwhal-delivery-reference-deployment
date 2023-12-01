@@ -36,3 +36,5 @@ package:
       # See tls.example.cert and tls.example.key for examples of what these files should look like. The example files are the correct cert and key for the domain 'bigbang.dev'. NEVER USE BIGBANG.DEV WITH LIVE DATA. ITS TLS SECRET KEY HAS BEEN PASSED AROUND MORE THAN A HOLIDAY FRUITCAKE THAT NOBODY WANTS.
       CERT_FILE: tls.cert
       KEY_FILE: tls.key
+      KEYCLOAK_CERT_FILE: tls.cert
+      KEYCLOAK_KEY_FILE: tls.key
