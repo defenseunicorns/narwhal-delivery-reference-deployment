@@ -127,7 +127,19 @@ _test-mission-app-up: #_# On the test server, build and deploy the mission app
 
 .PHONY: _test-mission-app-test
 _test-mission-app-test: #_# On the test server, run the mission app tests
-	error "not implemented yet"
+	REGION=$$(cd test/iac && terraform output -raw region); \
+	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
+	aws ssm start-session \
+		--region $$REGION \
+		--target $$SERVER_ID \
+		--document-name AWS-StartInteractiveCommand \
+		--parameters command='[" \
+			cd ~/narwhal-delivery-reference-deployment/test \
+			&& git pull \
+			&& chmod +x ./test-mission.app.sh \
+			&& ./test-mission-app.sh \
+			&& echo \"EXITCODE: 0\" \
+		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
 .PHONY: _test-mission-app-down
 _test-mission-app-down: #_# On the test server, tear down the mission app
