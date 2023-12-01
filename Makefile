@@ -88,8 +88,11 @@ _test-platform-up: #_# On the test server, set up the k8s cluster and UDS platfo
 		--target $$SERVER_ID \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			cd ~/narwhal-delivery-reference-deployment/test \
+			cd ~/narwhal-delivery-reference-deployment \
 			&& git pull \
+			&& cp tls.example.cert tls.cert \
+			&& cp tls.example.key tls.key \
+			&& cp zarf-config.example.yaml zarf-config.yaml \
 			&& sudo make zarf-init platform-up \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
@@ -116,7 +119,7 @@ _test-mission-app-up: #_# On the test server, build and deploy the mission app
 		--target $$SERVER_ID \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			cd ~/narwhal-delivery-reference-deployment/test \
+			cd ~/narwhal-delivery-reference-deployment \
 			&& git pull \
 			&& sudo make mission-app-up \
 			&& echo \"EXITCODE: 0\" \

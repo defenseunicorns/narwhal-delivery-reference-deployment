@@ -9,7 +9,7 @@ repos:
         args:
           - "--allow-missing-credentials"
       - id: detect-private-key
-        exclude: '(tls\.example\.key|tls\.key)'
+        exclude: 'tls.example.key'
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
       - id: trailing-whitespace
