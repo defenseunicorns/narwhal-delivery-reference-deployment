@@ -6,6 +6,32 @@ SHELL := /bin/bash
 
 ZARF := zarf -l debug --no-progress --no-log-file
 
+DOCKER_ARGS := -it --rm \
+	--cap-add=NET_ADMIN \
+	--cap-add=NET_RAW \
+	-v "${PWD}:/app" \
+	-v "${PWD}/.cache/pre-commit:/root/.cache/pre-commit" \
+	-v "${PWD}/.cache/tmp:/tmp" \
+	-v "${PWD}/.cache/go:/root/go" \
+	-v "${PWD}/.cache/go-build:/root/.cache/go-build" \
+	-v "${PWD}/.cache/.terraform.d/plugin-cache:/root/.terraform.d/plugin-cache" \
+	-v "${PWD}/.cache/.zarf-cache:/root/.zarf-cache" \
+	--workdir "/app" \
+	-e TF_LOG_PATH \
+	-e TF_LOG \
+	-e GOPATH=/root/go \
+	-e GOCACHE=/root/.cache/go-build \
+	-e TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE=true \
+	-e TF_PLUGIN_CACHE_DIR=/root/.terraform.d/plugin-cache \
+	-e AWS_REGION \
+	-e AWS_DEFAULT_REGION \
+	-e AWS_ACCESS_KEY_ID \
+	-e AWS_SECRET_ACCESS_KEY \
+	-e AWS_SESSION_TOKEN \
+	-e AWS_SECURITY_TOKEN \
+	-e AWS_SESSION_EXPIRATION \
+	${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+
 # The current branch name
 BRANCH := $(shell git symbolic-ref --short HEAD)
 # The "primary" directory
@@ -62,6 +88,11 @@ endif
  	$(ZARF) package deploy \
 		zarf-package-podinfo-amd64-${MISSION_APP_VERSION}.tar.zst \
 		--confirm
+
+.PHONY: _test-all
+_test-all: #_# Run the whole test end-to-end. Uses Docker. Requires access to AWS account. Costs real money. Handles cleanup by itself assuming it is able to run all the way through.
+	docker run ${DOCKER_ARGS} \
+		bash -c './test/test-all.sh'
 
 .PHONY: _test-infra-up
 _test-infra-up: #_# Use Terraform to bring up the test server and prepare it for use
@@ -216,7 +247,7 @@ _test-clone: #_# Clone the repo in the test instance so we can use it
 		--target $$(cd test/iac && terraform output -raw server_id) \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			rm -rf ~/narwhal-delivery-reference-deployment \
+			sudo rm -rf ~/narwhal-delivery-reference-deployment \
 			&& git clone -b $(BRANCH) $(REPO) ~/narwhal-delivery-reference-deployment \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"

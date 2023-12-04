@@ -6,22 +6,12 @@
 package:
   deploy:
     set:
-      # This is the set of IP addresses that MetalLB will use to assign to LoadBalancer services.
-      # Your networking topology must be such that traffic to these IP addresses ends up at the cluster. The cluster will then take care of deciding where that traffic goes.
-      # It must contain at least 3 addresses.
-      # Our recommendation is that it contain ONLY 3 addresses.
-      # The addresses may be specified using either of the following formats:
-      #    - A CIDR range, such as "10.0.0.0/30" (which ends up being 4 addresses, not ideal)
-      #    - An explicit start-end range, such as "10.0.0.1-10.0.0.3"
-      # Right now only 1 range is supported.
-      # If you'd like to use IP addresses that aren't "next to each other" please submit an issue here: https://github.com/defenseunicorns/uds-package-metallb
-      IP_ADDRESS_POOL: 10.0.255.1-10.0.255.3
-
-      # This value configures Kyverno's approved-registries policy.
-      # Setting this is a temporary measure until the policy is fixed such that it only looks at pods.
-      # See https://github.com/defenseunicorns/uds-package-dubbd/issues/549
-      # TODO: Stop setting this once the policy issue is fixed.
-      APPROVED_REGISTRIES: 127.0.0.1* | ghcr.io/defenseunicorns/pepr* | ghcr.io/stefanprodan* | registry1.dso.mil
+      # The IP addresses we want to assign to each ingress gateway. You'll need to either update the /etc/hosts file
+      # or ensure that your internal DNS properly maps the domain names you are using to these IP addresses.
+      # Use whichever addresses make sense for your environment, they don't have to stay with these values.
+      IP_ADDRESS_ADMIN_INGRESSGATEWAY: 10.0.255.1
+      IP_ADDRESS_TENANT_INGRESSGATEWAY: 10.0.255.2
+      IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY: 10.0.255.3
 
       # This tells Keycloak to use its internal database instead of an external one.
       # If you'd like to use an external one, set this to "false" and set the other KEYCLOAK_* variables appropriately.

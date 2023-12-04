@@ -18,8 +18,8 @@ inputs:
   github-context:
     description: The GitHub Status Context to use when updating the status
     required: true
-  test-to-run:
-    description: Which test to run. See the "VALID_TESTS" env var in this action for the list of valid inputs.
+  target-to-run:
+    description: Which Makefile target to run.
     required: true
 
 runs:
@@ -47,17 +47,6 @@ runs:
         GITHUB_REF: ${{ github.event.client_payload.pull_request.head.ref || github.ref_name }}
         GITHUB_OWNER: ${{ github.event.client_payload.github.payload.repository.owner.login || github.repository_owner }}
 
-    - name: Validate test-to-run input
-      shell: bash -e -o pipefail {0}
-      env:
-        # When more tests are added, add them to this list as space-delimited strings. Example: VALID_TESTS: "foo bar baz"
-        VALID_TESTS: "on-prem-lite"
-      run: |
-        if [[ ! " $VALID_TESTS " =~ " ${{ inputs.test-to-run }} " ]]; then
-          echo "Invalid test-to-run input: '${{ inputs.test-to-run }}'. Valid inputs are: $VALID_TESTS."
-          exit 1
-          fi
-
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -69,7 +58,8 @@ runs:
 
     - name: "Run test"
       shell: bash -o pipefail {0}
-      run: make +scriptwrap TARGET=_test-${{ inputs.test-to-run }}
+      # Wraps the target in the `script` command to simulate a TTY
+      run: script -q -e -c 'make ${{ inputs.target-to-run }}' /dev/null
 
     # this is because the GitHub installation token expires after an hour, non-configurable, sometimes the tests take longer than an hour
     # https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app
