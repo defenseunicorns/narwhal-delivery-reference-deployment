@@ -38,3 +38,6 @@ package:
       KEY_FILE: tls.key
       KEYCLOAK_CERT_FILE: tls.cert
       KEYCLOAK_KEY_FILE: tls.key
+
+      # Used for the test pipeline
+      DUBBD_VALUES: test/dubbd-values.yaml
