@@ -97,7 +97,7 @@ _test-all: #_# Run the whole test end-to-end. Uses Docker. Requires access to AW
 .PHONY: _test-infra-up
 _test-infra-up: #_# Use Terraform to bring up the test server and prepare it for use
 	cd test/iac && terraform init && terraform apply --auto-approve
-	$(MAKE) _test-wait-for-zarf _test-install-dod-ca _test-clone
+	$(MAKE) _test-wait-for-zarf _test-install-dod-ca _test-clone _test-update-etc-hosts
 
 # Runs destroy again if the first one fails to complete.
 .PHONY: _test-infra-down
@@ -249,6 +249,19 @@ _test-clone: #_# Clone the repo in the test instance so we can use it
 		--parameters command='[" \
 			sudo rm -rf ~/narwhal-delivery-reference-deployment \
 			&& git clone -b $(BRANCH) $(REPO) ~/narwhal-delivery-reference-deployment \
+			&& echo \"EXITCODE: 0\" \
+		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
+
+.PHONY: _test-update-etc-hosts
+_test-update-etc-hosts: #_# Update /etc/hosts on the test instance
+	aws ssm start-session \
+		--region $$(cd test/iac && terraform output -raw region) \
+		--target $$(cd test/iac && terraform output -raw server_id) \
+		--document-name AWS-StartInteractiveCommand \
+		--parameters command='[" \
+			cd ~/narwhal-delivery-reference-deployment/test \
+			&& chmod +x ./update-local-etc-hosts.sh \
+			&& ./update-local-etc-hosts.sh \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
