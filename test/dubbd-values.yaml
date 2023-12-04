@@ -2,11 +2,11 @@ istio:
   values:
     meshConfig:
       meshMTLS:
-        minProtocolVersion: TLS1_2
+        minProtocolVersion: TLSV1_2
   gateways:
     admin:
       tls:
-        minProtocolVersion: TLS1_2
+        minProtocolVersion: TLSV1_2
     tenant:
       tls:
         minProtocolVersion: TLSV1_2
