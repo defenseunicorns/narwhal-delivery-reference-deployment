@@ -1,5 +1,7 @@
 # Do all the stuff we'd need to do so that we save caches on pushes to main
 
+name: save-cache
+
 on:
   push:
     branches:

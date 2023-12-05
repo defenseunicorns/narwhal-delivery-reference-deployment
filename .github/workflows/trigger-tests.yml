@@ -21,6 +21,8 @@
 # When: I comment "/test <testname>" in a PR
 # Then: Run just that test
 
+name: trigger-tests
+
 on:
   pull_request:
   merge_group:
@@ -43,9 +45,6 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-        with:
-          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.client_payload.pull_request.head.ref || github.ref_name }}
       - name: cache
         uses: ./.github/actions/cache
         with:

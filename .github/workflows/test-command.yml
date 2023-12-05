@@ -3,6 +3,8 @@
 # Attribution for a bunch of this goes to CloudPosse
 # https://github.com/cloudposse/actions/blob/master/.github/workflows/test-command.yml
 
+name: test-command
+
 on:
   repository_dispatch:
     types: [test-command]

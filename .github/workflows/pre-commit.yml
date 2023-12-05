@@ -1,6 +1,8 @@
 # If the workflow trigger is "pull_request" or "merge_group", run the pre-commit checks.
 # Also run it on pushes to main, so that caches are created from the main branch, which will let child branches use them
 
+name: pre-commit
+
 on:
   pull_request:
   merge_group:

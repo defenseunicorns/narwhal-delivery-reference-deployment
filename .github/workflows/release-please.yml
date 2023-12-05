@@ -1,5 +1,7 @@
 # On every push to main, run release-please to automatically handle the release process.
 
+name: release-please
+
 on:
   push:
     branches:
