@@ -95,7 +95,8 @@ jobs:
 
   test-e2e-all:
     needs: test-exemption
-    if: github.event_name == 'merge_group' && needs.test-exemption.outputs.not-exempt == 'true'
+    # always run, for testing the job
+#    if: github.event_name == 'merge_group' && needs.test-exemption.outputs.not-exempt == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
