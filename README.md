@@ -56,6 +56,7 @@ This reference deployment uses several components that are still in the early st
 ### Dev Prerequisites
 
 - All of the above
+- AWS creds configured and available using the standard [environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 - Docker
 - [AWS CLI Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
 
