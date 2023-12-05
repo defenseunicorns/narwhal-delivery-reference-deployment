@@ -33,6 +33,8 @@ This reference deployment uses several components that are still in the early st
 
 ## Prerequisites
 
+### End User Prerequisites
+
 > NOTE: The prerequisites assume you have an empty Linux server. If you already have a Kubernetes cluster that you want to deploy to, rather than running `make zarf-init` as referenced below, you should instead run `zarf init --components=git-server --confirm`.
 >
 > The Kubernetes cluster must meet the following criteria:
@@ -50,6 +52,12 @@ This reference deployment uses several components that are still in the early st
 - A file called `tls.key` in this directory that has your TLS key in it. See `zarf-config.example.yaml` for more details.
 
   > NOTE: The `zarf-config.yaml`, `tls.cert`, and `tls.key` files should be treated as secrets, since they will have sensitive environment-specific data in them. They should not be checked into source control.
+
+### Dev Prerequisites
+
+- All of the above
+- Docker
+- [AWS CLI Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
 
 ## Objective
 
