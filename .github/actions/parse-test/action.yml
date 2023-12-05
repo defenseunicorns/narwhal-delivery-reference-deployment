@@ -6,8 +6,8 @@ outputs:
   run-ping:
     description: Will be 'true' if the 'ping' job should run
     value: ${{ steps.parse.outputs.ping }}
-  run-e2e-on-prem-lite:
-    description: Will be 'true' if the 'e2e_on-prem-lite' job should run
+  run-e2e-all:
+    description: Will be 'true' if the 'e2e_all' job should run
     value: ${{ steps.parse.outputs.e2e_on_prem_lite }}
 runs:
   using: composite

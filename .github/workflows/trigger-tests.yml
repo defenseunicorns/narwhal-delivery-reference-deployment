@@ -47,7 +47,7 @@ jobs:
         with:
           application_id: ${{ secrets.NARWHAL_BOT_APP_ID }}
           application_private_key: ${{ secrets.NARWHAL_BOT_SECRET }}
-          status-check: test / e2e-on-prem-lite
+          status-check: test / e2e-all
           status: success
           description: "Tests skipped because this is a pull_request event"
 
@@ -89,11 +89,11 @@ jobs:
         with:
           application_id: ${{ secrets.NARWHAL_BOT_APP_ID }}
           application_private_key: ${{ secrets.NARWHAL_BOT_SECRET }}
-          status-check: test / e2e-on-prem-lite
+          status-check: test / e2e-all
           status: success
           description: "Tests skipped because this is a merge_group event and the PR meets the criteria for granting an exemption"
 
-  test-e2e-on-prem-lite:
+  test-e2e-all:
     needs: test-exemption
     if: github.event_name == 'merge_group' && needs.test-exemption.outputs.not-exempt == 'true'
     runs-on: ubuntu-latest
@@ -114,8 +114,8 @@ jobs:
           application_private_key: ${{ secrets.NARWHAL_BOT_SECRET }}
           role-to-assume: ${{ secrets.AWS_COMMERCIAL_ROLE_TO_ASSUME }}
           region: us-east-1
-          github-context: test / e2e-on-prem-lite
-          target-to-run: "on-prem-lite"
+          github-context: test / e2e-all
+          target-to-run: "_test-all"
 
   slash-command-dispatch-test:
     if: github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/test')
