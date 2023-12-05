@@ -73,7 +73,7 @@ locals {
 }
 
 module "vpc" {
-  source                       = "git::https://github.com/defenseunicorns/terraform-aws-uds-vpc.git?ref=v0.1.3"
+  source                       = "git::https://github.com/defenseunicorns/terraform-aws-uds-vpc.git?ref=v0.1.4"
   name                         = local.name
   tags                         = local.tags
   vpc_cidr                     = var.vpc_cidr
