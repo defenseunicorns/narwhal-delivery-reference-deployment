@@ -6,7 +6,7 @@ SHELL := /bin/bash
 
 ZARF := zarf -l debug --no-progress --no-log-file
 
-DOCKER_ARGS := -it --rm \
+ALL_THE_DOCKER_ARGS := -it --rm \
 	--cap-add=NET_ADMIN \
 	--cap-add=NET_RAW \
 	-v "${PWD}:/app" \
@@ -57,6 +57,12 @@ help-dev: ## Show available dev-facing targets
 	| sed -n 's/^\(.*\): \(.*\)#_#\(.*\)/\1:\3/p' \
 	| column -t -s ":"
 
+.PHONY: help-internal
+help-internal: ## Show available internal targets
+	grep -E '^\+[a-zA-Z0-9_-]+:.*?#\+# .*$$' $(MAKEFILE_LIST) \
+	| sed -n 's/^\(.*\): \(.*\)#\+#\(.*\)/\1:\3/p' \
+	| column -t -s ":"
+
 .PHONY: zarf-init
 zarf-init: ## Run 'zarf init' on the local machine. Will create a K3s cluster since the "k3s" component is selected.
 ifneq ($(shell id -u), 0)
@@ -91,7 +97,7 @@ endif
 
 .PHONY: _test-all
 _test-all: #_# Run the whole test end-to-end. Uses Docker. Requires access to AWS account. Costs real money. Handles cleanup by itself assuming it is able to run all the way through.
-	docker run ${DOCKER_ARGS} \
+	docker run ${ALL_THE_DOCKER_ARGS} \
 		bash -c './test/test-all.sh'
 
 .PHONY: _test-infra-up
@@ -322,3 +328,64 @@ endif
 _prereqs: #_# Run prerequisite checks
 	zarf tools kubectl get nodes > /dev/null || (echo "ERROR: unable to establish clean connection to the kubernetes cluster. If you don't have one yet and want one on the local (Linux) machine you can run 'sudo zarf init --components=k3s,git-server --set K3S_ARGS=\"--disable traefik,servicelb\" --confirm'" && exit 1)
 	zarf tools kubectl -n zarf get sts zarf-gitea > /dev/null || (echo "ERROR: the Zarf git-server was not found. Either Zarf was not initialized or it was initialized without the git-server component" && exit 1)
+
+.PHONY: +create-folders
++create-folders: #+# Create the .cache folder structure
+	mkdir -p .cache/docker
+	mkdir -p .cache/pre-commit
+	mkdir -p .cache/go
+	mkdir -p .cache/go-build
+	mkdir -p .cache/tmp
+	mkdir -p .cache/.terraform.d/plugin-cache
+	mkdir -p .cache/.zarf-cache
+
+.PHONY: +docker-save-build-harness
++docker-save-build-harness: +create-folders #+# Save the build-harness docker image to the .cache folder
+	docker pull ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+	docker save -o .cache/docker/build-harness.tar ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+
+.PHONY: +docker-load-build-harness
++docker-load-build-harness: #+# Load the build-harness docker image from the .cache folder
+	docker load -i .cache/docker/build-harness.tar
+
+.PHONY: +update-cache
++update-cache: +create-folders +docker-save-build-harness #+# Update the cache
+	docker run ${ALL_THE_DOCKER_ARGS} \
+		bash -c 'git config --global --add safe.directory /app \
+			&& pre-commit install --install-hooks \
+			&&  go test -run=SomeTestNameThatIsntReal ./... \
+			&& (cd deployments/on-prem-lite/terraform && terraform init)'
+
+.PHONY: +runhooks
++runhooks: +create-folders #+# Helper "function" for running pre-commits
+	docker run ${ALL_THE_DOCKER_ARGS} \
+		bash -c 'git config --global --add safe.directory /app \
+		&& pre-commit run -a --show-diff-on-failure $(HOOK)'
+
+.PHONY: +pre-commit-all
++pre-commit-all: #+# [Docker] Run all pre-commit hooks
+	$(MAKE) +runhooks HOOK="" SKIP=""
+
+.PHONY: +pre-commit-terraform
++pre-commit-terraform: #+# [Docker] Run terraform pre-commit hooks
+	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,go-fmt,golangci-lint,renovate-config-validator"
+
+.PHONY: +pre-commit-golang
++pre-commit-golang: #+# [Docker] Run golang pre-commit hooks
+	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
+
+.PHONY: +pre-commit-renovate
++pre-commit-renovate: #+# [Docker] Run renovate pre-commit hooks
+	$(MAKE) +runhooks HOOK="renovate-config-validator" SKIP=""
+
+.PHONY: +pre-commit-common
++pre-commit-common: #+# [Docker] Run common pre-commit hooks
+	$(MAKE) +runhooks HOOK="" SKIP="go-fmt,golangci-lint,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
+
+.PHONY: _fix-cache-permissions
+_fix-cache-permissions: #+# [Docker] Fix permissions on the .cache folder
+	docker run $(TTY_ARG) --rm -v "${PWD}:/app" --workdir "/app" -e "PRE_COMMIT_HOME=/app/.cache/pre-commit" ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION} chmod -R a+rx .cache
+
+.PHONY: +autoformat
++autoformat: #+# [Docker] Autoformat all files
+	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,check-yaml,golangci-lint,terraform_checkov,terraform_tflint,renovate-config-validator"

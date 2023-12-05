@@ -43,11 +43,11 @@ runs:
       shell: bash -e -o pipefail {0}
       run: |
         # Make it always return 0 since changing files is considered a failure by pre-commit
-        make +scriptwrap TARGET=_autoformat || true
+        script -q -e -c 'make +autoformat' /dev/null || true
 
     - name: Fix cache permissions
       shell: bash -e -o pipefail {0}
-      run: make +scriptwrap TARGET=_fix-cache-permissions
+      run: script -q -e -c 'make _fix-cache-permissions' /dev/null
 
     # Use the GraphQL API to commit changes, so we get automatic commit signing
     # The REST contents API can't be used as easily because it only supports making single file commits
