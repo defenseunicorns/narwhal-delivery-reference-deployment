@@ -64,7 +64,11 @@ To have the mission app deployed and integrated with DUBBD and Keycloak in the s
 
 1. Clone this repo locally.
 2. Configure `zarf-config.yaml`, `tls.cert`, and `tls.key` with your environment-specific values. See above section for more details.
-3. Run `make up`
+3. Initialize the Kubernetes cluster and Zarf with `make zarf-init`
+4. Deploy the platform with `make platform-up`
+5. Deploy the mission app with `make mission-app-up`
+
+> Run `make help` to see all possible targets
 
 ## Day 2 Operations
 
