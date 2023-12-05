@@ -98,15 +98,15 @@ endif
 .PHONY: _test-all
 _test-all: #_# Run the whole test end-to-end. Uses Docker. Requires access to AWS account. Costs real money. Handles cleanup by itself assuming it is able to run all the way through.
 	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c './test/test-all.sh'
+		bash -c 'git config --global --add safe.directory /app && ./test/test-all.sh'
 
 .PHONY: _test-infra-up
 _test-infra-up: #_# Use Terraform to bring up the test server and prepare it for use
-	echo $(REPO)
-	echo $(BRANCH)
-	exit 1
-	cd test/iac && terraform init && terraform apply --auto-approve
-	$(MAKE) _test-wait-for-zarf _test-install-dod-ca _test-clone _test-update-etc-hosts
+	echo $(REPO) \
+	&& echo $(BRANCH) \
+	&& exit 1 \
+	&& cd test/iac && terraform init && terraform apply --auto-approve \
+	&& $(MAKE) _test-wait-for-zarf _test-install-dod-ca _test-clone _test-update-etc-hosts \
 
 # Runs destroy again if the first one fails to complete.
 .PHONY: _test-infra-down
