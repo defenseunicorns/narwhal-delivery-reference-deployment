@@ -13,8 +13,8 @@
     steps:
       - name: Run `pre-commit run -a`
         shell: bash -e -o pipefail {0}
-        run: "make +scriptwrap TARGET=_pre-commit-${{inputs.check-type}}"
+        run: script -q -e -c 'make +pre-commit-${{inputs.check-type}}' /dev/null
 
       - name: Fix cache permissions
         shell: bash -e -o pipefail {0}
-        run: "make +scriptwrap TARGET=_fix-cache-permissions"
+        run: script -q -e -c 'make _fix-cache-permissions' /dev/null

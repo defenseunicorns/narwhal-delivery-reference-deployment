@@ -1,5 +1,7 @@
 # Do all the stuff we'd need to do so that we save caches on pushes to main
 
+name: save-cache
+
 on:
   push:
     branches:
@@ -20,9 +22,9 @@ jobs:
         with:
           action: restore
       - name: update-cache
-        run: make +scriptwrap TARGET=+update-cache
+        run: script -q -e -c 'make +update-cache' /dev/null
       - name: Fix cache permissions
-        run: make +scriptwrap TARGET=_fix-cache-permissions
+        run: script -q -e -c 'make _fix-cache-permissions' /dev/null
       - name: save-cache
         uses: ./.github/actions/cache
         with:

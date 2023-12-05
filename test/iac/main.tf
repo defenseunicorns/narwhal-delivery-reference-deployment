@@ -194,6 +194,6 @@ module "server" {
   ssh_password                   = "password"
   assign_public_ip               = false
   tenancy                        = "default"
-  zarf_version                   = "v0.29.0"
+  zarf_version                   = var.zarf_version
   tags                           = local.tags
 }

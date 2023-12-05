@@ -1,6 +1,8 @@
 # If the workflow trigger is "pull_request" or "merge_group", run the pre-commit checks.
 # Also run it on pushes to main, so that caches are created from the main branch, which will let child branches use them
 
+name: pre-commit
+
 on:
   pull_request:
   merge_group:
@@ -33,20 +35,6 @@ jobs:
         uses: ./.github/actions/pre-commit
         with:
           check-type: terraform
-
-  golang:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      - name: cache
-        uses: ./.github/actions/cache
-        with:
-          action: restore
-      - name: pre-commit
-        uses: ./.github/actions/pre-commit
-        with:
-          check-type: golang
 
   renovate:
     runs-on: ubuntu-latest

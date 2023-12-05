@@ -28,11 +28,10 @@ runs:
     - name: "Update GitHub Status for pending"
       uses: docker://cloudposse/github-status-updater
       with:
-        args: "-action update_state -state pending -ref ${{ env.REPO_SHA }} -repo ${{ env.REPO_NAME }}"
+        args: "-action update_state -state pending -ref ${{ env.REPO_SHA }} -repo ${{ env.REPO_NAME }} -token ${{ steps.get_installation_token.outputs.token }}"
       env:
         REPO_SHA: ${{ github.event.client_payload.pull_request.head.sha || github.event.pull_request.head.sha || github.sha }}
         REPO_NAME: ${{ github.event.client_payload.github.payload.repository.name || github.event.repository.name }}
-        GITHUB_TOKEN: ${{ steps.get_installation_token.outputs.token }}
         GITHUB_CONTEXT: ${{ inputs.github-context }}
         GITHUB_DESCRIPTION: "started by @${{ github.event.client_payload.github.actor || github.actor }}"
         GITHUB_TARGET_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -43,11 +42,11 @@ runs:
       shell: bash -e -o pipefail {0}
       run: |
         # Make it always return 0 since changing files is considered a failure by pre-commit
-        make +scriptwrap TARGET=_autoformat || true
+        script -q -e -c 'make +autoformat' /dev/null || true
 
     - name: Fix cache permissions
       shell: bash -e -o pipefail {0}
-      run: make +scriptwrap TARGET=_fix-cache-permissions
+      run: script -q -e -c 'make _fix-cache-permissions' /dev/null
 
     # Use the GraphQL API to commit changes, so we get automatic commit signing
     # The REST contents API can't be used as easily because it only supports making single file commits
@@ -111,11 +110,10 @@ runs:
       if: ${{ success() }}
       uses: docker://cloudposse/github-status-updater
       with:
-        args: "-action update_state -state success -ref ${{ env.REPO_SHA }} -repo ${{ env.REPO_NAME }}"
+        args: "-action update_state -state success -ref ${{ env.REPO_SHA }} -repo ${{ env.REPO_NAME }} -token ${{ steps.get_installation_token.outputs.token }}"
       env:
         REPO_SHA: ${{ github.event.client_payload.pull_request.head.sha || github.event.pull_request.head.sha || github.sha }}
         REPO_NAME: ${{ github.event.client_payload.github.payload.repository.name || github.event.repository.name }}
-        GITHUB_TOKEN: ${{ steps.get_installation_token.outputs.token }}
         GITHUB_CONTEXT: ${{ inputs.github-context }}
         GITHUB_DESCRIPTION: "run passed"
         GITHUB_TARGET_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -127,11 +125,10 @@ runs:
       if: ${{ failure() }}
       uses: docker://cloudposse/github-status-updater
       with:
-        args: "-action update_state -state failure -ref ${{ env.REPO_SHA }} -repo ${{ env.REPO_NAME }}"
+        args: "-action update_state -state failure -ref ${{ env.REPO_SHA }} -repo ${{ env.REPO_NAME }} -token ${{ steps.get_installation_token.outputs.token }}"
       env:
         REPO_SHA: ${{ github.event.client_payload.pull_request.head.sha || github.event.pull_request.head.sha || github.sha }}
         REPO_NAME: ${{ github.event.client_payload.github.payload.repository.name || github.event.repository.name }}
-        GITHUB_TOKEN: ${{ steps.get_installation_token.outputs.token }}
         GITHUB_CONTEXT: ${{ inputs.github-context }}
         GITHUB_DESCRIPTION: "run failed"
         GITHUB_TARGET_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -143,11 +140,10 @@ runs:
       if: ${{ cancelled() }}
       uses: docker://cloudposse/github-status-updater
       with:
-        args: "-action update_state -state error -ref ${{ env.REPO_SHA }} -repo ${{ env.REPO_NAME }}"
+        args: "-action update_state -state error -ref ${{ env.REPO_SHA }} -repo ${{ env.REPO_NAME }} -token ${{ steps.get_installation_token.outputs.token }}"
       env:
         REPO_SHA: ${{ github.event.client_payload.pull_request.head.sha || github.event.pull_request.head.sha || github.sha }}
         REPO_NAME: ${{ github.event.client_payload.github.payload.repository.name || github.event.repository.name }}
-        GITHUB_TOKEN: ${{ steps.get_installation_token.outputs.token }}
         GITHUB_CONTEXT: ${{ inputs.github-context }}
         GITHUB_DESCRIPTION: "run cancelled"
         GITHUB_TARGET_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

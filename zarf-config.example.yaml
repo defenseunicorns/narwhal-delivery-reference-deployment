@@ -1,0 +1,33 @@
+
+# IMPORTANT!!!!!!
+# ALL OF THESE VARIABLES NEED TO BE SET WITH YOUR ENVIRONMENT-SPECIFIC VALUES!
+# IF ANY OF THEM ARE NOT PRESENT, DEFAULT VALUES WILL BE USED WHICH AREN'T SECURE
+
+package:
+  deploy:
+    set:
+      # The IP addresses we want to assign to each ingress gateway. You'll need to either update the /etc/hosts file
+      # or ensure that your internal DNS properly maps the domain names you are using to these IP addresses.
+      # Use whichever addresses make sense for your environment, they don't have to stay with these values.
+      IP_ADDRESS_ADMIN_INGRESSGATEWAY: 10.0.255.1
+      IP_ADDRESS_TENANT_INGRESSGATEWAY: 10.0.255.2
+      IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY: 10.0.255.3
+
+      # This tells Keycloak to use its internal database instead of an external one.
+      # If you'd like to use an external one, set this to "false" and set the other KEYCLOAK_* variables appropriately.
+      # See https://github.com/defenseunicorns/uds-idam#zarf-variables-configuration
+      KEYCLOAK_DEV_DB_ENABLED: "true"
+
+      # The domain to use. Will get used as the base for all deployments. For example, if DOMAIN is 'bigbang.dev' then keycloak will be listening at 'https://keycloak.bigbang.dev'
+      DOMAIN: bigbang.dev
+
+      # The files where the TLS cert and key live.
+      # Don't change these. Instead, create these files in this directory with the proper data in them. The filenames 'tls.cert' and 'tls.key' are in the .gitignore file so they won't be committed. Do not commit the TLS secret key to source control.
+      # See tls.example.cert and tls.example.key for examples of what these files should look like. The example files are the correct cert and key for the domain 'bigbang.dev'. NEVER USE BIGBANG.DEV WITH LIVE DATA. ITS TLS SECRET KEY HAS BEEN PASSED AROUND MORE THAN A HOLIDAY FRUITCAKE THAT NOBODY WANTS.
+      CERT_FILE: tls.cert
+      KEY_FILE: tls.key
+      KEYCLOAK_CERT_FILE: tls.cert
+      KEYCLOAK_KEY_FILE: tls.key
+
+      # Used for the test pipeline
+      DUBBD_VALUES: test/dubbd-values.yaml

@@ -4,14 +4,9 @@ include .env
 
 SHELL := /bin/bash
 
-ZARF := zarf --no-progress --no-log-file
+ZARF := zarf -l debug --no-progress --no-log-file
 
-ON_PREM_LITE_IP_ADDRESS_ADMIN_INGRESSGATEWAY := 10.0.255.0
-ON_PREM_LITE_IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY := 10.0.255.2
-ON_PREM_LITE_IP_ADDRESS_TENANT_INGRESSGATEWAY := 10.0.255.1
-
-# DRY is good.
-ALL_THE_DOCKER_ARGS := $(TTY_ARG) -it --rm \
+ALL_THE_DOCKER_ARGS := -it --rm \
 	--cap-add=NET_ADMIN \
 	--cap-add=NET_RAW \
 	-v "${PWD}:/app" \
@@ -22,7 +17,6 @@ ALL_THE_DOCKER_ARGS := $(TTY_ARG) -it --rm \
 	-v "${PWD}/.cache/.terraform.d/plugin-cache:/root/.terraform.d/plugin-cache" \
 	-v "${PWD}/.cache/.zarf-cache:/root/.zarf-cache" \
 	--workdir "/app" \
-	-e SKIP \
 	-e TF_LOG_PATH \
 	-e TF_LOG \
 	-e GOPATH=/root/go \
@@ -38,7 +32,12 @@ ALL_THE_DOCKER_ARGS := $(TTY_ARG) -it --rm \
 	-e AWS_SESSION_EXPIRATION \
 	${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
 
-# Silent mode by default. Run `make VERBOSE=1` to turn off silent mode.
+# The current branch name
+BRANCH := $(shell git symbolic-ref --short HEAD)
+# The "primary" directory
+PRIMARY_DIR := $(shell pwd)
+
+# Silent mode by default. Run `make <the-target> VERBOSE=1` to turn off silent mode.
 ifndef VERBOSE
 .SILENT:
 endif
@@ -64,499 +63,134 @@ help-internal: ## Show available internal targets
 	| sed -n 's/^\(.*\): \(.*\)#\+#\(.*\)/\1:\3/p' \
 	| column -t -s ":"
 
-.PHONY: on-prem-lite-up
-on-prem-lite-up: ## [Docker] Full on-prem-lite deployment
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-up'
-
-.PHONY: on-prem-lite-down
-on-prem-lite-down: ## [Docker] Destroy the on-prem-lite deployment
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-terraform-destroy'
-
-.PHONY: on-prem-lite-update-local-etc-hosts
-on-prem-lite-update-local-etc-hosts: ## Update the /etc/hosts file on the local machine
+.PHONY: zarf-init
+zarf-init: ## Run 'zarf init' on the local machine. Will create a K3s cluster since the "k3s" component is selected.
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
-	chmod +x scripts/on-prem-lite/update-local-etc-hosts.sh && scripts/on-prem-lite/update-local-etc-hosts.sh
+	$(ZARF) init \
+		--components=k3s,git-server \
+		--set K3S_ARGS="--disable traefik,servicelb" \
+		--confirm
 
-# On Mac there's no good way to install sshpass. Enter the password yourself ya lazy bum. The password is "password".
-# Make sure you have the stuff you need installed (sshuttle, ssh, AWS CLI, session manager plugin, etc)
-.PHONY: on-prem-lite-start-sshuttle
-on-prem-lite-start-sshuttle: +create-folders ## Start an Sshuttle connection with the on-prem-lite server
+.PHONY: platform-up
+platform-up: ## Deploy the secure platform (MetalLB, DUBBD, IDAM, SSO)
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	sshuttle -e 'ssh -q -o CheckHostIP=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="aws ssm --region $(shell docker run ${ALL_THE_DOCKER_ARGS} bash -c 'cd deployments/on-prem-lite/terraform && terraform output -raw region') start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"' --dns --disable-ipv6 -vr ec2-user@$(shell docker run ${ALL_THE_DOCKER_ARGS} bash -c 'cd deployments/on-prem-lite/terraform && terraform output -raw server_id') $(shell docker run ${ALL_THE_DOCKER_ARGS} bash -c 'cd deployments/on-prem-lite/terraform && terraform output -raw vpc_cidr') 10.0.255.0/24 \
+	make _deploy-metallb \
+		_deploy-dubbd \
+		_deploy-idam \
+		_deploy-sso \
+		_update-coredns
 
-
-.PHONY: on-prem-lite-rollback-local-etc-hosts
-on-prem-lite-rollback-local-etc-hosts: ## Rollback the /etc/hosts file on the local machine
+.PHONY: mission-app-up
+mission-app-up: ## Deploy the mission app
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
-	chmod +x scripts/on-prem-lite/rollback-local-etc-hosts.sh && scripts/on-prem-lite/rollback-local-etc-hosts.sh
+	echo "Deploying mission app..."; \
+	[ -f "zarf-package-podinfo-amd64-${MISSION_APP_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://ghcr.io/defenseunicorns/narwhal-delivery-zarf-package-podinfo/podinfo:${MISSION_APP_VERSION}-amd64; \
+ 	$(ZARF) package deploy \
+		zarf-package-podinfo-amd64-${MISSION_APP_VERSION}.tar.zst \
+		--confirm
 
-.PHONY: _test-on-prem-lite
-_test-on-prem-lite: #_# [Docker] Stand up the on-prem-lite deployment, run the test, then tear it down
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	FAILURE=0; \
-	$(MAKE) on-prem-lite-up || FAILURE=1; \
-	sleep 30; \
-	[[ $$FAILURE -eq 0 ]] && make +on-prem-lite-go-test || FAILURE=1; \
-	make on-prem-lite-down || FAILURE=1; \
-	exit $$FAILURE; \
-
-.PHONY: _on-prem-lite-terraform-init
-_on-prem-lite-terraform-init: +create-folders #_# [Docker] Run terraform init on the on-prem-lite infra
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
+.PHONY: _test-all
+_test-all: #_# Run the whole test end-to-end. Uses Docker. Requires access to AWS account. Costs real money. Handles cleanup by itself assuming it is able to run all the way through.
 	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-terraform-init'
+		bash -c 'git config --global --add safe.directory /app && ./test/test-all.sh'
 
-.PHONY: _on-prem-lite-terraform-plan
-_on-prem-lite-terraform-plan: +create-folders #_# [Docker] Run terraform plan on the on-prem-lite infra
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-terraform-plan'
+.PHONY: _test-infra-up
+_test-infra-up: #_# Use Terraform to bring up the test server and prepare it for use
+	cd test/iac && terraform init && terraform apply --auto-approve
+	$(MAKE) _test-wait-for-zarf _test-install-dod-ca _test-clone _test-update-etc-hosts \
 
-.PHONY: _on-prem-lite-terraform-apply
-_on-prem-lite-terraform-apply: +create-folders #_# [Docker] Run terraform apply on the on-prem-lite infra
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-terraform-apply'
+# Runs destroy again if the first one fails to complete.
+.PHONY: _test-infra-down
+_test-infra-down: #_# Use Terraform to bring down the test server
+	cd test/iac && terraform init && terraform destroy --auto-approve || terraform destroy -auto-approve
 
-.PHONY: _on-prem-lite-terraform-destroy
-_on-prem-lite-terraform-destroy: +create-folders #_# [Docker] Run terraform destroy on the on-prem-lite infra
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-terraform-destroy'
-
-.PHONY: _on-prem-lite-start-session
-_on-prem-lite-start-session: +create-folders #_# [Docker] Start a session on the on-prem-lite server
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'cd deployments/on-prem-lite/terraform \
-			&& aws ssm start-session \
-				--region $$(terraform output -raw region) \
-				--target $$(terraform output -raw server_id)'
-
-.PHONY: _on-prem-lite-zarf-init
-_on-prem-lite-zarf-init: +create-folders #_# [Docker] Run 'zarf init' on the on-prem-lite server
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-zarf-init'
-
-.PHONY: _on-prem-lite-deploy-metallb
-_on-prem-lite-deploy-metallb: +create-folders #_# [Docker] Deploy Metallb
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-deploy-metallb'
-
-.PHONY: _on-prem-lite-deploy-dubbd
-_on-prem-lite-deploy-dubbd: +create-folders #_# [Docker] Deploy DUBBD
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-deploy-dubbd'
-
-.PHONY: _on-prem-lite-deploy-idam
-_on-prem-lite-deploy-idam: +create-folders #_# [Docker] Deploy the IDAM package (Keycloak)
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-deploy-idam'
-
-.PHONY: _on-prem-lite-deploy-sso
-_on-prem-lite-deploy-sso: +create-folders #_# [Docker] Deploy the SSO package (Pepr and Authservice)
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-deploy-sso'
-
-.PHONY: _on-prem-lite-update-server-etc-hosts
-_on-prem-lite-update-server-etc-hosts: +create-folders #_# [Docker] Update the /etc/hosts file on the server
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-update-server-etc-hosts'
-
-.PHONY: _on-prem-lite-update-coredns-config
-_on-prem-lite-update-coredns-config: +create-folders #_# [Docker] Update the CoreDNS config on the server
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-update-coredns-config'
-
-.PHONY: _on-prem-lite-deploy-mission-app
-_on-prem-lite-deploy-mission-app: +create-folders #_# [Docker] Deploy the Mission App
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-deploy-mission-app'
-
-.PHONY: _on-prem-lite-destroy-cluster
-_on-prem-lite-destroy-cluster: +create-folders #_# [Docker] Destroy the Kubernetes cluster (but not the server)
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-destroy-cluster'
-
-.PHONY: _docker-save-build-harness
-_docker-save-build-harness: +create-folders #_# Save the build-harness docker image to the .cache folder
-	docker pull ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
-	docker save -o .cache/docker/build-harness.tar ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
-
-.PHONY: _docker-load-build-harness
-_docker-load-build-harness: #_# Load the build-harness docker image from the .cache folder
-	docker load -i .cache/docker/build-harness.tar
-
-.PHONY: _pre-commit-all
-_pre-commit-all: #_# [Docker] Run all pre-commit hooks
-	$(MAKE) +runhooks HOOK="" SKIP=""
-
-.PHONY: +pre-commit-terraform
-_pre-commit-terraform: #_# [Docker] Run terraform pre-commit hooks
-	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,go-fmt,golangci-lint,renovate-config-validator"
-
-.PHONY: _pre-commit-golang
-_pre-commit-golang: #_# [Docker] Run golang pre-commit hooks
-	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
-
-.PHONY: _pre-commit-renovate
-_pre-commit-renovate: #_# [Docker] Run renovate pre-commit hooks
-	$(MAKE) +runhooks HOOK="renovate-config-validator" SKIP=""
-
-.PHONY: _pre-commit-common
-_pre-commit-common: #_# [Docker] Run common pre-commit hooks
-	$(MAKE) +runhooks HOOK="" SKIP="go-fmt,golangci-lint,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
-
-.PHONY: _fix-cache-permissions
-_fix-cache-permissions: #_# [Docker] Fix permissions on the .cache folder
-	docker run $(TTY_ARG) --rm -v "${PWD}:/app" --workdir "/app" -e "PRE_COMMIT_HOME=/app/.cache/pre-commit" ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION} chmod -R a+rx .cache
-
-.PHONY: _autoformat
-_autoformat: #_# [Docker] Autoformat all files
-	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,check-yaml,golangci-lint,terraform_checkov,terraform_tflint,renovate-config-validator"
-
-.PHONY: +on-prem-lite-go-test
-+on-prem-lite-go-test: #+# [Docker] Run the E2E test for the on-prem-lite deployment
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	echo "Starting test run. You may not see any output for a bit."
-	docker run -v /var/run/docker.sock:/var/run/docker.sock ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-start-sshuttle-in-background \
-			&& make +on-prem-lite-update-local-etc-hosts \
-			&& cd test/e2e \
-			&& sleep 10 \
-			&& go test -count 1 -v -timeout 2h -run TestOnPremLite'
-
-.PHONY: +on-prem-lite-up
-+on-prem-lite-up: #+# Full on-prem-lite deployment
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	$(MAKE) -s \
-		+on-prem-lite-terraform-init \
-		+on-prem-lite-terraform-apply \
-		+on-prem-lite-wait-for-zarf-no-docker \
-		+on-prem-lite-zarf-init \
-		+on-prem-lite-deploy-metallb \
-		+on-prem-lite-deploy-dubbd \
-		+on-prem-lite-deploy-idam \
-		+on-prem-lite-deploy-sso \
-		+on-prem-lite-update-server-etc-hosts \
-		+on-prem-lite-update-coredns-config \
-		+on-prem-lite-deploy-mission-app
-
-.PHONY: +on-prem-lite-terraform-init
-+on-prem-lite-terraform-init: #+# Run terraform init on the on-prem-lite infra
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& terraform init
-
-.PHONY: +on-prem-lite-terraform-plan
-+on-prem-lite-terraform-plan: +create-folders #_# Run terraform plan on the on-prem-lite infra
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& terraform plan
-
-.PHONY: +on-prem-lite-terraform-apply
-+on-prem-lite-terraform-apply: +create-folders #+# Run terraform apply on the on-prem-lite infra
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& terraform apply -auto-approve
-
-.PHONY: +on-prem-lite-zarf-init
-+on-prem-lite-zarf-init: +create-folders #+# Run 'zarf init' on the on-prem-lite server
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo $(ZARF) init \
-					--components=k3s,git-server \
-					--set K3S_ARGS=\"--disable traefik,servicelb\" \
-					--confirm \
-				&& echo \"EXITCODE: 0\" \
-			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
-
-.PHONY: +on-prem-lite-deploy-metallb
-+on-prem-lite-deploy-metallb: +create-folders #+# Deploy Metallb
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo $(ZARF) package deploy \
-					oci://ghcr.io/defenseunicorns/packages/metallb:${METALLB_VERSION}-amd64 \
-					--set=IP_ADDRESS_ADMIN_INGRESSGATEWAY=\"$(ON_PREM_LITE_IP_ADDRESS_ADMIN_INGRESSGATEWAY)\" \
-					--set=IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY=\"$(ON_PREM_LITE_IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY)\" \
-					--set=IP_ADDRESS_TENANT_INGRESSGATEWAY=\"$(ON_PREM_LITE_IP_ADDRESS_TENANT_INGRESSGATEWAY)\" \
-					--confirm \
-				&& echo \"EXITCODE: 0\" \
-			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
-
-# TODO: Take out this APPROVED_REGISTRIES thing. See https://github.com/defenseunicorns/uds-sso/issues/25
-.PHONY: +on-prem-lite-deploy-dubbd
-+on-prem-lite-deploy-dubbd: +create-folders #+# Deploy DUBBD
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo $(ZARF) package deploy \
-					oci://ghcr.io/defenseunicorns/packages/dubbd-k3d:${DUBBD_VERSION}-amd64 \
-					--set=APPROVED_REGISTRIES=\"127.0.0.1* | ghcr.io/defenseunicorns/pepr* | ghcr.io/stefanprodan* | registry1.dso.mil\" \
-					--confirm \
-				&& echo \"EXITCODE: 0\" \
-			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
-
-.PHONY: +on-prem-lite-deploy-idam
-+on-prem-lite-deploy-idam: +create-folders #+# Deploy the IDAM package (Keycloak)
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo $(ZARF) package deploy \
-					oci://ghcr.io/defenseunicorns/uds-capability/uds-idam:${IDAM_VERSION}-amd64 \
-					--set=KEYCLOAK_DEV_DB_ENABLED=true \
-					--confirm \
-				&& echo \"EXITCODE: 0\" \
-			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
-
-.PHONY: +on-prem-lite-deploy-sso
-+on-prem-lite-deploy-sso: +create-folders #+# Deploy the SSO package (Pepr and Authservice)
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo $(ZARF) package deploy \
-					oci://ghcr.io/defenseunicorns/uds-capability/uds-sso:${SSO_VERSION}-amd64 \
-					--confirm \
-				&& echo \"EXITCODE: 0\" \
-			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
-
-.PHONY: +on-prem-lite-update-server-etc-hosts
-+on-prem-lite-update-server-etc-hosts: +create-folders #+# Update the /etc/hosts file on the server
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
+.PHONY: _test-start-session
+_test-start-session: #_# Open an interactive shell on the test server
 	aws ssm start-session \
-		--region $(shell cd deployments/on-prem-lite/terraform && terraform output -raw region) \
-		--target $(shell cd deployments/on-prem-lite/terraform && terraform output -raw server_id) \
+		--region $$(cd test/iac && terraform output -raw region) \
+		--target $$(cd test/iac && terraform output -raw server_id)
+
+.PHONY: _test-platform-up
+_test-platform-up: #_# On the test server, set up the k8s cluster and UDS platform
+	REGION=$$(cd test/iac && terraform output -raw region); \
+	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
+	aws ssm start-session \
+		--region $$REGION \
+		--target $$SERVER_ID \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
-			echo \"$(shell base64 scripts/on-prem-lite/update-server-etc-hosts.sh | tr -d "\n")\" | sudo tee /root/update-server-etc-hosts.b64 \
-			&& sudo base64 -d /root/update-server-etc-hosts.b64 | sudo tee /root/update-server-etc-hosts.sh \
-			&& sudo chmod +x /root/update-server-etc-hosts.sh \
-			&& sudo /root/update-server-etc-hosts.sh \
+			cd ~/narwhal-delivery-reference-deployment \
+			&& git pull \
+			&& cp tls.example.cert tls.cert \
+			&& cp tls.example.key tls.key \
+			&& cp zarf-config.example.yaml zarf-config.yaml \
+			&& sudo make zarf-init platform-up \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
-.PHONY: +on-prem-lite-update-coredns-config
-+on-prem-lite-update-coredns-config: +create-folders #+# Update the CoreDNS config on the server
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				echo \"$(shell base64 scripts/on-prem-lite/update-coredns.sh | tr -d "\n")\" | sudo tee /root/update-coredns.b64 \
-					&& sudo base64 -d /root/update-coredns.b64 | sudo tee /root/update-coredns.sh \
-					&& sudo chmod +x /root/update-coredns.sh \
-					&& sudo /root/update-coredns.sh \
-					&& echo \"EXITCODE: 0\" \
-			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
+.PHONY: _test-platform-down
+_test-platform-down: #_# On the test server, tear down the UDS platform and k8s cluster
+	REGION=$$(cd test/iac && terraform output -raw region); \
+	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
+	aws ssm start-session \
+		--region $$REGION \
+		--target $$SERVER_ID \
+		--document-name AWS-StartInteractiveCommand \
+		--parameters command='[" \
+			sudo zarf destroy --confirm --remove-components \
+			&& echo \"EXITCODE: 0\" \
+		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
-.PHONY: +on-prem-lite-update-local-etc-hosts
-+on-prem-lite-update-local-etc-hosts: #+# Update the /etc/hosts file on the local machine. Doesn't use Docker.
-ifneq ($(shell id -u), 0)
-	$(error "This target must be run as root")
-endif
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	chmod +x scripts/on-prem-lite/update-local-etc-hosts-no-docker.sh && scripts/on-prem-lite/update-local-etc-hosts-no-docker.sh
+.PHONY: _test-mission-app-up
+_test-mission-app-up: #_# On the test server, build and deploy the mission app
+	REGION=$$(cd test/iac && terraform output -raw region); \
+	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
+	aws ssm start-session \
+		--region $$REGION \
+		--target $$SERVER_ID \
+		--document-name AWS-StartInteractiveCommand \
+		--parameters command='[" \
+			cd ~/narwhal-delivery-reference-deployment \
+			&& git pull \
+			&& sudo make mission-app-up \
+			&& echo \"EXITCODE: 0\" \
+		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
-.PHONY: +on-prem-lite-deploy-mission-app
-+on-prem-lite-deploy-mission-app: +create-folders #+# Deploy the Mission App
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo $(ZARF) package deploy \
-					oci://ghcr.io/defenseunicorns/narwhal-delivery-zarf-package-podinfo/podinfo:${MISSION_APP_VERSION}-amd64 \
-					--confirm \
-					-l debug \
-				&& echo \"EXITCODE: 0\" \
-			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
+.PHONY: _test-mission-app-test
+_test-mission-app-test: #_# On the test server, run the mission app tests
+	REGION=$$(cd test/iac && terraform output -raw region); \
+	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
+	aws ssm start-session \
+		--region $$REGION \
+		--target $$SERVER_ID \
+		--document-name AWS-StartInteractiveCommand \
+		--parameters command='[" \
+			cd ~/narwhal-delivery-reference-deployment/test \
+			&& git pull \
+			&& chmod +x ./test-mission-app.sh \
+			&& ./test-mission-app.sh \
+			&& echo \"EXITCODE: 0\" \
+		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
-.PHONY: +on-prem-lite-destroy-cluster
-+on-prem-lite-destroy-cluster: +create-folders #+# Destroy the Kubernetes cluster (but not the server)
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& aws ssm start-session \
-			--region $$(terraform output -raw region) \
-			--target $$(terraform output -raw server_id) \
-			--document-name AWS-StartInteractiveCommand \
-			--parameters command='[" \
-				sudo $(ZARF) destroy \
-					--remove-components \
-					--confirm \
-				&& echo \"EXITCODE: 0\" \
-			"]' | tee /dev/tty | grep -q "EXITCODE: 0"
+.PHONY: _test-mission-app-down
+_test-mission-app-down: #_# On the test server, tear down the mission app
+	error "not implemented yet"
 
-# Potentially running terraform destroy twice because of https://github.com/defenseunicorns/terraform-aws-uds-bastion/issues/47
-.PHONY: +on-prem-lite-terraform-destroy
-+on-prem-lite-terraform-destroy: #+# Run terraform destroy on the on-prem-lite infra
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	cd deployments/on-prem-lite/terraform \
-		&& terraform destroy -auto-approve || terraform destroy -auto-approve
-
-.PHONY: +on-prem-lite-start-sshuttle-in-background
-+on-prem-lite-start-sshuttle-in-background: #+# Start Sshuttle in the background.
-ifneq ($(shell id -u), 0)
-	$(error "This target must be run as root")
-endif
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	sshuttle -D -e 'sshpass -p "password" ssh -q -o CheckHostIP=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand="aws ssm --region $(shell cd deployments/on-prem-lite/terraform && terraform output -raw region) start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"' --dns --disable-ipv6 -vr ec2-user@$(shell cd deployments/on-prem-lite/terraform && terraform output -raw server_id) $(shell cd deployments/on-prem-lite/terraform && terraform output -raw vpc_cidr) 10.0.255.0/24
-
-.PHONY: +on-prem-lite-get-admin-ingressgateway-ip
-+on-prem-lite-get-admin-ingressgateway-ip: #+# Get the IP address of the admin-ingressgateway service
-	echo -n "$(ON_PREM_LITE_IP_ADDRESS_ADMIN_INGRESSGATEWAY)"
-
-.PHONY: +on-prem-lite-get-keycloak-ingressgateway-ip
-+on-prem-lite-get-keycloak-ingressgateway-ip: #+# Get the IP address of the keycloak-ingressgateway service
-	echo -n "$(ON_PREM_LITE_IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY)"
-
-.PHONY: +on-prem-lite-get-tenant-ingressgateway-ip
-+on-prem-lite-get-tenant-ingressgateway-ip: #+# Get the IP address of the tenant-ingressgateway service
-	echo -n "$(ON_PREM_LITE_IP_ADDRESS_TENANT_INGRESSGATEWAY)"
-
-.PHONY: +create-folders
-+create-folders: #+# Create the .cache folder structure
-	mkdir -p .cache/docker
-	mkdir -p .cache/pre-commit
-	mkdir -p .cache/go
-	mkdir -p .cache/go-build
-	mkdir -p .cache/tmp
-	mkdir -p .cache/.terraform.d/plugin-cache
-	mkdir -p .cache/.zarf-cache
-
-.PHONY: +on-prem-lite-wait-for-zarf
-+on-prem-lite-wait-for-zarf: #+# [Docker] Wait for Zarf to be installed in the on-prem-lite server
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'make +on-prem-lite-wait-for-zarf-no-docker'
-
-.PHONY: +on-prem-lite-wait-for-zarf-no-docker
-+on-prem-lite-wait-for-zarf-no-docker: #+# Wait for Zarf to be installed in the on-prem-lite server
-ifndef AWS_ACCESS_KEY_ID
-	$(error AWS CLI environment variables are not set)
-endif
+.PHONY: _test-wait-for-zarf
+_test-wait-for-zarf: #_# Wait for Zarf to be installed in the test server
 	START_TIME=$$(date +%s); \
+	REGION=$$(cd test/iac && terraform output -raw region); \
+	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
 	while true; do \
 		if aws ssm start-session \
-				--region $(shell cd deployments/on-prem-lite/terraform && terraform output -raw region) \
-				--target $(shell cd deployments/on-prem-lite/terraform && terraform output -raw server_id) \
+				--region $$REGION \
+				--target $$SERVER_ID \
 				--document-name AWS-StartInteractiveCommand \
 				--parameters command='["whoami"]'; then \
 			break; \
@@ -571,8 +205,8 @@ endif
 		sleep 10; \
 	done; \
 	aws ssm start-session \
-		--region $(shell cd deployments/on-prem-lite/terraform && terraform output -raw region) \
-		--target $(shell cd deployments/on-prem-lite/terraform && terraform output -raw server_id) \
+		--region $$REGION \
+		--target $$SERVER_ID \
 		--document-name AWS-StartInteractiveCommand \
 		--parameters command='[" \
 			START_TIME=$$(date +%s); \
@@ -593,9 +227,134 @@ endif
 			done; \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
-.PHONY: +scriptwrap
-+scriptwrap: #+# Wrap a target in the `script` command to simulate a TTY
-	script -q -e -c '$(MAKE) $(TARGET)' /dev/null
+.PHONY: _test-install-dod-ca
+_test-install-dod-ca: #_# Install the DOD CA in the test server
+	REGION=$$(cd test/iac && terraform output -raw region); \
+	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
+	aws ssm start-session \
+		--region $$REGION \
+		--target $$SERVER_ID \
+		--document-name AWS-StartInteractiveCommand \
+		--parameters command='[" \
+			sudo yum install -y -q git \
+			&& cd ~ \
+			&& wget https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/zip/unclass-certificates_pkcs7_DoD.zip \
+			&& unzip -o unclass-certificates_pkcs7_DoD.zip \
+			&& cd certificates_pkcs7_*_dod/ \
+			&& sudo cp -f ./dod_pke_chain.pem /etc/pki/ca-trust/source/anchors/ \
+			&& sudo update-ca-trust \
+			&& echo \"EXITCODE: 0\" \
+		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
+
+.PHONY: _test-clone
+_test-clone: #_# Clone the repo in the test instance so we can use it
+	aws ssm start-session \
+		--region $$(cd test/iac && terraform output -raw region) \
+		--target $$(cd test/iac && terraform output -raw server_id) \
+		--document-name AWS-StartInteractiveCommand \
+		--parameters command='[" \
+			sudo rm -rf ~/narwhal-delivery-reference-deployment \
+			&& git clone -b $(BRANCH) $(REPO) ~/narwhal-delivery-reference-deployment \
+			&& echo \"EXITCODE: 0\" \
+		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
+
+.PHONY: _test-update-etc-hosts
+_test-update-etc-hosts: #_# Update /etc/hosts on the test instance
+	aws ssm start-session \
+		--region $$(cd test/iac && terraform output -raw region) \
+		--target $$(cd test/iac && terraform output -raw server_id) \
+		--document-name AWS-StartInteractiveCommand \
+		--parameters command='[" \
+			cd ~/narwhal-delivery-reference-deployment/test \
+			&& chmod +x ./update-local-etc-hosts.sh \
+			&& sudo ./update-local-etc-hosts.sh \
+			&& echo \"EXITCODE: 0\" \
+		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
+
+.PHONY: _deploy-metallb
+_deploy-metallb: _prereqs #_# Deploy the metallb load balancer on the local machine.
+ifneq ($(shell id -u), 0)
+	$(error "This target must be run as root")
+endif
+	echo "Deploying MetalLB..."; \
+ 	[ -f "zarf-package-metallb-amd64-${METALLB_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://ghcr.io/defenseunicorns/packages/metallb:${METALLB_VERSION}-amd64; \
+ 	$(ZARF) package deploy \
+		zarf-package-metallb-amd64-${METALLB_VERSION}.tar.zst \
+		--confirm
+
+.PHONY: _deploy-dubbd
+_deploy-dubbd: _prereqs #_# Deploy the dubbd package
+ifneq ($(shell id -u), 0)
+	$(error "This target must be run as root")
+endif
+	echo "Deploying DUBBD..."; \
+	[ -f "zarf-package-dubbd-k3d-amd64-${DUBBD_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://ghcr.io/defenseunicorns/packages/dubbd-k3d:${DUBBD_VERSION}-amd64; \
+ 	$(ZARF) package deploy \
+		zarf-package-dubbd-k3d-amd64-${DUBBD_VERSION}.tar.zst \
+		--confirm
+
+.PHONY: _deploy-idam
+_deploy-idam: _prereqs #_# Deploy the idam package
+ifneq ($(shell id -u), 0)
+	$(error "This target must be run as root")
+endif
+	echo "Deploying the IDAM package..."; \
+ 	[ -f "zarf-package-uds-idam-amd64-${IDAM_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://ghcr.io/defenseunicorns/uds-capability/uds-idam:${IDAM_VERSION}-amd64; \
+ 	$(ZARF) package deploy \
+		zarf-package-uds-idam-amd64-${IDAM_VERSION}.tar.zst \
+		--confirm \
+
+.PHONY: _deploy-sso
+_deploy-sso: _prereqs #_# Deploy the sso package
+ifneq ($(shell id -u), 0)
+	$(error "This target must be run as root")
+endif
+	echo "Deploying the SSO package..."; \
+	[ -f "zarf-package-uds-sso-amd64-${SSO_VERSION}.tar.zst" ] > /dev/null || $(ZARF) package pull oci://ghcr.io/defenseunicorns/uds-capability/uds-sso:${SSO_VERSION}-amd64; \
+ 	$(ZARF) package deploy \
+		zarf-package-uds-sso-amd64-${SSO_VERSION}.tar.zst \
+		--confirm \
+
+# This is ugly as hell, but what it basically does is append the IP address of the keycloak ingress gateway to the coredns configmap so that things inside the cluster can resolve the keycloak domain name.
+.PHONY: _update-coredns
+_update-coredns: _prereqs #_# Update the coredns configmap to include the keycloak ingress gateway IP. Only needed if you are using the *.bigbang.dev domain
+ifneq ($(shell id -u), 0)
+	$(error "This target must be run as root")
+endif
+	zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}' | grep -q "$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak" || zarf tools kubectl patch cm coredns -n kube-system --type='json' -p="[{\"op\": \"replace\", \"path\": \"/data/NodeHosts\", \"value\":\"$(shell zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}')\n$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak.bigbang.dev\"}]"
+	zarf tools kubectl rollout restart deployment coredns -n kube-system
+
+.PHONY: _prereqs
+_prereqs: #_# Run prerequisite checks
+	zarf tools kubectl get nodes > /dev/null || (echo "ERROR: unable to establish clean connection to the kubernetes cluster. If you don't have one yet and want one on the local (Linux) machine you can run 'sudo zarf init --components=k3s,git-server --set K3S_ARGS=\"--disable traefik,servicelb\" --confirm'" && exit 1)
+	zarf tools kubectl -n zarf get sts zarf-gitea > /dev/null || (echo "ERROR: the Zarf git-server was not found. Either Zarf was not initialized or it was initialized without the git-server component" && exit 1)
+
+.PHONY: +create-folders
++create-folders: #+# Create the .cache folder structure
+	mkdir -p .cache/docker
+	mkdir -p .cache/pre-commit
+	mkdir -p .cache/go
+	mkdir -p .cache/go-build
+	mkdir -p .cache/tmp
+	mkdir -p .cache/.terraform.d/plugin-cache
+	mkdir -p .cache/.zarf-cache
+
+.PHONY: +docker-save-build-harness
++docker-save-build-harness: +create-folders #+# Save the build-harness docker image to the .cache folder
+	docker pull ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+	docker save -o .cache/docker/build-harness.tar ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION}
+
+.PHONY: +docker-load-build-harness
++docker-load-build-harness: #+# Load the build-harness docker image from the .cache folder
+	docker load -i .cache/docker/build-harness.tar
+
+.PHONY: +update-cache
++update-cache: +create-folders +docker-save-build-harness #+# Update the cache
+	docker run ${ALL_THE_DOCKER_ARGS} \
+		bash -c 'git config --global --add safe.directory /app \
+			&& pre-commit install --install-hooks \
+			&&  go test -run=SomeTestNameThatIsntReal ./... \
+			&& (cd deployments/on-prem-lite/terraform && terraform init)'
 
 .PHONY: +runhooks
 +runhooks: +create-folders #+# Helper "function" for running pre-commits
@@ -603,10 +362,25 @@ endif
 		bash -c 'git config --global --add safe.directory /app \
 		&& pre-commit run -a --show-diff-on-failure $(HOOK)'
 
-.PHONY: +update-cache
-+update-cache: +create-folders _docker-save-build-harness #+# Update the cache
-	docker run ${ALL_THE_DOCKER_ARGS} \
-		bash -c 'git config --global --add safe.directory /app \
-			&& pre-commit install --install-hooks \
-			&&  go test -run=SomeTestNameThatIsntReal ./... \
-			&& (cd deployments/on-prem-lite/terraform && terraform init)'
+.PHONY: +pre-commit-all
++pre-commit-all: #+# [Docker] Run all pre-commit hooks
+	$(MAKE) +runhooks HOOK="" SKIP=""
+
+.PHONY: +pre-commit-terraform
++pre-commit-terraform: #+# [Docker] Run terraform pre-commit hooks
+	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,renovate-config-validator"
+.PHONY: +pre-commit-renovate
++pre-commit-renovate: #+# [Docker] Run renovate pre-commit hooks
+	$(MAKE) +runhooks HOOK="renovate-config-validator" SKIP=""
+
+.PHONY: +pre-commit-common
++pre-commit-common: #+# [Docker] Run common pre-commit hooks
+	$(MAKE) +runhooks HOOK="" SKIP="terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
+
+.PHONY: _fix-cache-permissions
+_fix-cache-permissions: #+# [Docker] Fix permissions on the .cache folder
+	docker run $(TTY_ARG) --rm -v "${PWD}:/app" --workdir "/app" -e "PRE_COMMIT_HOME=/app/.cache/pre-commit" ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION} chmod -R a+rx .cache
+
+.PHONY: +autoformat
++autoformat: #+# [Docker] Autoformat all files
+	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,check-yaml,terraform_checkov,terraform_tflint,renovate-config-validator"

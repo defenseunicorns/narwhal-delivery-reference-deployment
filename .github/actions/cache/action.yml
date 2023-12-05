@@ -78,7 +78,7 @@ runs:
       if: inputs.action == 'restore' && steps.restore-docker-cache.outputs.cache-hit == 'true'
       shell: bash -e -o pipefail {0}
       run: |
-        make _docker-load-build-harness
+        make +docker-load-build-harness
     - name: save docker cache
       if: inputs.action == 'save'
       uses: actions/cache/save@v3

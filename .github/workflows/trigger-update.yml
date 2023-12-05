@@ -1,3 +1,5 @@
+name: trigger-update
+
 on:
   issue_comment:
     types: [created]
