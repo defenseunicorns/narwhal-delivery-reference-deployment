@@ -261,7 +261,7 @@ _test-update-etc-hosts: #_# Update /etc/hosts on the test instance
 		--parameters command='[" \
 			cd ~/narwhal-delivery-reference-deployment/test \
 			&& chmod +x ./update-local-etc-hosts.sh \
-			&& ./update-local-etc-hosts.sh \
+			&& sudo ./update-local-etc-hosts.sh \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
