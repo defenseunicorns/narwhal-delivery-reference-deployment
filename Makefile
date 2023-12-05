@@ -353,7 +353,7 @@ _prereqs: #_# Run prerequisite checks
 	docker run ${ALL_THE_DOCKER_ARGS} \
 		bash -c 'git config --global --add safe.directory /app \
 			&& pre-commit install --install-hooks \
-			&& (cd deployments/on-prem-lite/terraform && terraform init)'
+			&& (cd test/iac && terraform init)'
 
 .PHONY: +runhooks
 +runhooks: +create-folders #+# Helper "function" for running pre-commits
