@@ -102,6 +102,9 @@ _test-all: #_# Run the whole test end-to-end. Uses Docker. Requires access to AW
 
 .PHONY: _test-infra-up
 _test-infra-up: #_# Use Terraform to bring up the test server and prepare it for use
+	echo $(REPO)
+	echo $(BRANCH)
+	exit 1
 	cd test/iac && terraform init && terraform apply --auto-approve
 	$(MAKE) _test-wait-for-zarf _test-install-dod-ca _test-clone _test-update-etc-hosts
 
@@ -368,19 +371,14 @@ _prereqs: #_# Run prerequisite checks
 
 .PHONY: +pre-commit-terraform
 +pre-commit-terraform: #+# [Docker] Run terraform pre-commit hooks
-	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,go-fmt,golangci-lint,renovate-config-validator"
-
-.PHONY: +pre-commit-golang
-+pre-commit-golang: #+# [Docker] Run golang pre-commit hooks
-	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
-
+	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,end-of-file-fixer,fix-byte-order-marker,trailing-whitespace,check-yaml,fix-smartquotes,renovate-config-validator"
 .PHONY: +pre-commit-renovate
 +pre-commit-renovate: #+# [Docker] Run renovate pre-commit hooks
 	$(MAKE) +runhooks HOOK="renovate-config-validator" SKIP=""
 
 .PHONY: +pre-commit-common
 +pre-commit-common: #+# [Docker] Run common pre-commit hooks
-	$(MAKE) +runhooks HOOK="" SKIP="go-fmt,golangci-lint,terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
+	$(MAKE) +runhooks HOOK="" SKIP="terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
 
 .PHONY: _fix-cache-permissions
 _fix-cache-permissions: #+# [Docker] Fix permissions on the .cache folder
@@ -388,4 +386,4 @@ _fix-cache-permissions: #+# [Docker] Fix permissions on the .cache folder
 
 .PHONY: +autoformat
 +autoformat: #+# [Docker] Autoformat all files
-	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,check-yaml,golangci-lint,terraform_checkov,terraform_tflint,renovate-config-validator"
+	$(MAKE) +runhooks HOOK="" SKIP="check-added-large-files,check-merge-conflict,detect-aws-credentials,detect-private-key,check-yaml,terraform_checkov,terraform_tflint,renovate-config-validator"

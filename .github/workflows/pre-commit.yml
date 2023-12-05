@@ -36,20 +36,6 @@ jobs:
         with:
           check-type: terraform
 
-  golang:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      - name: cache
-        uses: ./.github/actions/cache
-        with:
-          action: restore
-      - name: pre-commit
-        uses: ./.github/actions/pre-commit
-        with:
-          check-type: golang
-
   renovate:
     runs-on: ubuntu-latest
     steps:
