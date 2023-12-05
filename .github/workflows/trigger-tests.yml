@@ -39,27 +39,6 @@ defaults:
     shell: bash -e -o pipefail {0}
 
 jobs:
-  # Delete this job before merging
-  foo:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-      - name: cache
-        uses: ./.github/actions/cache
-        with:
-          action: restore
-      - name: Run E2E Tests
-        uses: ./.github/actions/e2e
-        with:
-          application_id: ${{ secrets.NARWHAL_BOT_APP_ID }}
-          application_private_key: ${{ secrets.NARWHAL_BOT_SECRET }}
-          role-to-assume: ${{ secrets.AWS_COMMERCIAL_ROLE_TO_ASSUME }}
-          region: us-east-1
-          github-context: test / foo
-          target-to-run: "_test-all"
 
   skip-tests-if-pull-request-event:
     if: github.event_name == 'pull_request'

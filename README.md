@@ -33,20 +33,15 @@ This reference deployment uses several components that are still in the early st
 
 ## Prerequisites
 
-> NOTE: The prerequisites assume you already have a Kubernetes cluster. If you don't have one and want to create a K3s cluster using Zarf, run `sudo zarf init --components=k3s,git-server --set K3S_ARGS="--disable traefik,servicelb" --confirm`. If this is the way you go, all subsequent commands will need to be run with `sudo` as well.
-
-- A Kubernetes cluster with the following criteria:
-  - uses amd64 architecture (sorry ARM, the Big Bang people still haven't gotten around to you yet).
-  - No existing ingress controllers or ServiceLB. If you are using K3s Traefik and ServiceLB have to be **disabled**.
-  - The version of K8s is a modern and supported one that is not EOL (End Of Life).
-  - The cluster has enough CPU and RAM available (exact numbers TBD)
-  - Zarf has already been initialized on the cluster with the optional `git-server` component enabled.
-
-> If you don't have a cluster yet, create one on the local (Linux) machine with `sudo zarf init --components=k3s,git-server --set K3S_ARGS="--disable traefik,servicelb" --confirm`. If this is the way you go, all subsequent commands will need to be run with `sudo` as well.
+> NOTE: The prerequisites assume you have an empty Linux server. If you already have a Kubernetes cluster that you want to deploy to, rather than running `make zarf-init` as referenced below, you should instead run `zarf init --components=git-server --confirm`.
 >
-> If you do already have a cluster, initialize Zarf with `sudo zarf init --components=git-server --set K3S_ARGS="--disable traefik,servicelb" --confirm`
+> The Kubernetes cluster must meet the following criteria:
+>   - uses amd64 architecture (sorry ARM, the Big Bang people still haven't gotten around to you yet).
+>   - No existing ingress controllers or ServiceLB. If you are using K3s Traefik and ServiceLB have to be **disabled**.
+>   - The version of K8s is a modern and supported one that is not EOL (End Of Life).
+>   - The cluster has enough CPU and RAM available (exact numbers TBD)
 
-- Local access to the K8s cluster. `kubectl get nodes` should work and return the nodes in the cluster.
+- A Linux server
 - The following tools installed locally and available on the $PATH:
   - [make](https://www.gnu.org/software/make/)
   - [zarf](https://github.com/defenseunicorns/zarf)
@@ -64,7 +59,7 @@ To have the mission app deployed and integrated with DUBBD and Keycloak in the s
 
 1. Clone this repo locally.
 2. Configure `zarf-config.yaml`, `tls.cert`, and `tls.key` with your environment-specific values. See above section for more details.
-3. Initialize the Kubernetes cluster and Zarf with `make zarf-init`
+3. Create the Kubernetes cluster and initialize Zarf with `make zarf-init`
 4. Deploy the platform with `make platform-up`
 5. Deploy the mission app with `make mission-app-up`
 
