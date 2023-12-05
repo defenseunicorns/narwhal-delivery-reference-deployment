@@ -17,4 +17,4 @@
 
       - name: Fix cache permissions
         shell: bash -e -o pipefail {0}
-        run: script -q -e -c 'make _fix-cache-permissions' /dev/null
+        run: script -q -e -c 'make +fix-cache-permissions' /dev/null

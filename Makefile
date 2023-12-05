@@ -353,7 +353,6 @@ _prereqs: #_# Run prerequisite checks
 	docker run ${ALL_THE_DOCKER_ARGS} \
 		bash -c 'git config --global --add safe.directory /app \
 			&& pre-commit install --install-hooks \
-			&&  go test -run=SomeTestNameThatIsntReal ./... \
 			&& (cd deployments/on-prem-lite/terraform && terraform init)'
 
 .PHONY: +runhooks
@@ -377,8 +376,8 @@ _prereqs: #_# Run prerequisite checks
 +pre-commit-common: #+# [Docker] Run common pre-commit hooks
 	$(MAKE) +runhooks HOOK="" SKIP="terraform_fmt,terraform_docs,terraform_checkov,terraform_tflint,renovate-config-validator"
 
-.PHONY: _fix-cache-permissions
-_fix-cache-permissions: #+# [Docker] Fix permissions on the .cache folder
+.PHONY: +fix-cache-permissions
++fix-cache-permissions: #+# [Docker] Fix permissions on the .cache folder
 	docker run $(TTY_ARG) --rm -v "${PWD}:/app" --workdir "/app" -e "PRE_COMMIT_HOME=/app/.cache/pre-commit" ${BUILD_HARNESS_REPO}:${BUILD_HARNESS_VERSION} chmod -R a+rx .cache
 
 .PHONY: +autoformat

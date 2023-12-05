@@ -24,7 +24,7 @@ jobs:
       - name: update-cache
         run: script -q -e -c 'make +update-cache' /dev/null
       - name: Fix cache permissions
-        run: script -q -e -c 'make _fix-cache-permissions' /dev/null
+        run: script -q -e -c 'make +fix-cache-permissions' /dev/null
       - name: save-cache
         uses: ./.github/actions/cache
         with:
