@@ -43,14 +43,10 @@ jobs:
   foo:
     runs-on: ubuntu-latest
     steps:
-      - uses: hmarr/debug-action@v2
-      - name: mytest
-        run: echo '${{ github.event.pull_request.head.ref }}'
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
       - name: cache
         uses: ./.github/actions/cache
         with:
@@ -129,8 +125,8 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.client_payload.pull_request.head.ref || github.ref_name }}
+          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name || github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.client_payload.pull_request.head.ref || github.event.pull_request.head.ref || github.ref_name }}
       - name: cache
         uses: ./.github/actions/cache
         with:

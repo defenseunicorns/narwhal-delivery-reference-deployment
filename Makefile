@@ -102,10 +102,7 @@ _test-all: #_# Run the whole test end-to-end. Uses Docker. Requires access to AW
 
 .PHONY: _test-infra-up
 _test-infra-up: #_# Use Terraform to bring up the test server and prepare it for use
-	echo $(REPO) \
-	&& echo $(BRANCH) \
-	&& exit 1 \
-	&& cd test/iac && terraform init && terraform apply --auto-approve \
+	cd test/iac && terraform init && terraform apply --auto-approve \
 	&& $(MAKE) _test-wait-for-zarf _test-install-dod-ca _test-clone _test-update-etc-hosts \
 
 # Runs destroy again if the first one fails to complete.
