@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.0.4](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/compare/v0.0.3...v0.0.4) (2023-12-06)
+
+
+### Documentation
+
+* add additional dev prerequisite in readme ([975c2fd](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/975c2fd816c7cc75b510f38306f245ae0bd1fc3f))
+
+
+### Miscellaneous Chores
+
+* **deps:** update all dependencies ([#43](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/43)) ([a441362](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/a4413626e74bb11112d41fe68cf3e26a8da86130))
+* **deps:** update all dependencies ([#50](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/50)) ([e83e689](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/e83e68903c65087807152b9b740900aa8b88a641))
+* refactor to focus on one reference deployment ([99d77d9](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/99d77d9bcd28ba997fecf38a0e5b31c1b039727e))
+
+
+### Continuous Integration
+
+* Fix cache CI job in main ([#46](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/46)) ([479a907](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/479a907484d7a7f4eca441caf09b672283927be5))
+* More fixes to cache job ([#49](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/49)) ([a288c6a](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/a288c6a3c979b78523450c544891d47c4c7c18ab))
+
 ## [0.0.3](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/compare/v0.0.2...v0.0.3) (2023-11-07)
 
 
