@@ -47,5 +47,5 @@ package:
 
       # SSO variabels:
       # See https://github.com/defenseunicorns/uds-sso
-      #REVIEW: reference sso/values-authservice.yaml and sso/zarf.yaml
+      #REVIEW: reference sso/values-authservice.yaml and sso/zarf.yaml -- need to research syntax
       KEYCLOAK_BASE_DOMAIN: ###ZARF_VAR_SUBDOMAIN###.###ZARF_VAR_DOMAIN###
