@@ -9,9 +9,19 @@ package:
       # The IP addresses we want to assign to each ingress gateway. You'll need to either update the /etc/hosts file
       # or ensure that your internal DNS properly maps the domain names you are using to these IP addresses.
       # Use whichever addresses make sense for your environment, they don't have to stay with these values.
+      #Ssee https://github.com/defenseunicorns/uds-capability-metallb
       IP_ADDRESS_ADMIN_INGRESSGATEWAY: 10.0.255.1
       IP_ADDRESS_TENANT_INGRESSGATEWAY: 10.0.255.2
       IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY: 10.0.255.3
+
+      #DUBBD variables: see https://github.com/defenseunicorns/uds-package-dubbd
+      GRAFANA_ADMIN_PASSWORD: #grafanapassword
+      NEUVECTOR_METRICS_PASSWRD: #metricspassword
+      NEUVECTOR_ADMIN_PASSWORD: #adminpassword
+      
+      # Used for the test pipeline
+      #TODO: Change for on-prem?
+      DUBBD_VALUES: test/dubbd-values.yaml      
 
       # This tells Keycloak to use its internal database instead of an external one.
       # If you'd like to use an external one, set this to "false" and set the other KEYCLOAK_* variables appropriately.
@@ -29,5 +39,13 @@ package:
       KEYCLOAK_CERT_FILE: tls.cert
       KEYCLOAK_KEY_FILE: tls.key
 
-      # Used for the test pipeline
-      DUBBD_VALUES: test/dubbd-values.yaml
+      #admin credential setup for keycloak
+      KEYCLOAK_DB_USERNAME: kcadmin
+      KEYCLOAK_DB_PASSWORD: #postgrespassword
+      KEYCLOAK_ADMIN_USERNAME: kcadmin
+      KEYCLOAK_ADMIN_PASSWORD: #kcadmin
+
+      # SSO variabels:
+      # See https://github.com/defenseunicorns/uds-sso
+      #REVIEW: reference sso/values-authservice.yaml and sso/zarf.yaml
+      KEYCLOAK_BASE_DOMAIN: ###ZARF_VAR_SUBDOMAIN###.###ZARF_VAR_DOMAIN###
