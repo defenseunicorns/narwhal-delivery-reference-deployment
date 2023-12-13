@@ -6,3 +6,4 @@ uds-idam,idam/values-keycloak.yaml,18,KC_HTTPS_TRUST_STORE_PASSWORD (interacts w
 uds-sso,sso/values-authservice.yaml,3,callback uri for default 'foo' client,https://foo.bigbang.dev/login
 uds-sso,sso/values-authservice.yaml,5,client secret for default client,2mMLbBB2V7ngoGOY0N6fP0i47f68eDNP
 uds-sso,sso/values-authservice.yaml,9,prefix for default client,foo.bigbang.dev
+uds-sso,sso/ca.pem,-,Certificate Authority for SSO,Internet Security Research Group ISRG Root X1 selfsigned
