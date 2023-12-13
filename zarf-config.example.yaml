@@ -33,7 +33,8 @@ package:
 
       # The files where the TLS cert and key live.
       # Don't change these. Instead, create these files in this directory with the proper data in them. The filenames 'tls.cert' and 'tls.key' are in the .gitignore file so they won't be committed. Do not commit the TLS secret key to source control.
-      # See tls.example.cert and tls.example.key for examples of what these files should look like. The example files are the correct cert and key for the domain 'bigbang.dev'. NEVER USE BIGBANG.DEV WITH LIVE DATA. ITS TLS SECRET KEY HAS BEEN PASSED AROUND MORE THAN A HOLIDAY FRUITCAKE THAT NOBODY WANTS.
+      # See tls.example.cert and tls.example.key for examples of what these files should look like. The example files are the correct cert and key for the domain 'bigbang.dev'.
+      # NEVER USE BIGBANG.DEV WITH LIVE DATA. ITS TLS SECRET KEY HAS BEEN PASSED AROUND MORE THAN A HOLIDAY FRUITCAKE THAT NOBODY WANTS.
       CERT_FILE: tls.cert
       KEY_FILE: tls.key
       KEYCLOAK_CERT_FILE: tls.cert
@@ -47,5 +48,4 @@ package:
 
       # SSO variabels:
       # See https://github.com/defenseunicorns/uds-sso
-      #REVIEW: reference sso/values-authservice.yaml and sso/zarf.yaml -- need to research syntax
-      KEYCLOAK_BASE_DOMAIN: ###ZARF_VAR_SUBDOMAIN###.###ZARF_VAR_DOMAIN###
+      KEYCLOAK_BASE_DOMAIN: keycloak.bigbang.dev
