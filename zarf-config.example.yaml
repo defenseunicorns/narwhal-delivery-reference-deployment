@@ -15,9 +15,9 @@ package:
       IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY: 10.0.255.3
 
       #DUBBD variables: see https://github.com/defenseunicorns/uds-package-dubbd
-      GRAFANA_ADMIN_PASSWORD: #grafanapassword
-      NEUVECTOR_METRICS_PASSWRD: #metricspassword
-      NEUVECTOR_ADMIN_PASSWORD: #adminpassword
+      GRAFANA_ADMIN_PASSWORD: grafanapassword
+      NEUVECTOR_METRICS_PASSWRD: metricspassword
+      NEUVECTOR_ADMIN_PASSWORD: adminpassword
       
       # Used for the test pipeline
       #TODO: Change for on-prem?
@@ -29,7 +29,7 @@ package:
       KEYCLOAK_DEV_DB_ENABLED: "true"
 
       # The domain to use. Will get used as the base for all deployments. For example, if DOMAIN is 'bigbang.dev' then keycloak will be listening at 'https://keycloak.bigbang.dev'
-      DOMAIN: bigbang.dev
+      DOMAIN: dextest.dev
 
       # The files where the TLS cert and key live.
       # Don't change these. Instead, create these files in this directory with the proper data in them. The filenames 'tls.cert' and 'tls.key' are in the .gitignore file so they won't be committed. Do not commit the TLS secret key to source control.
@@ -42,9 +42,9 @@ package:
 
       #admin credential setup for keycloak
       KEYCLOAK_DB_USERNAME: kcadmin
-      KEYCLOAK_DB_PASSWORD: #postgrespassword
+      KEYCLOAK_DB_PASSWORD: kcadminpwd
       KEYCLOAK_ADMIN_USERNAME: kcadmin
-      KEYCLOAK_ADMIN_PASSWORD: #kcadmin
+      KEYCLOAK_ADMIN_PASSWORD: kcadmin
 
       # SSO variabels:
       # See https://github.com/defenseunicorns/uds-sso
