@@ -64,6 +64,9 @@ resource "random_id" "default" {
 locals {
   name                          = var.use_unique_names ? "${var.name_prefix}-${lower(random_id.default[0].hex)}" : var.name_prefix
   access_log_bucket_name_prefix = "${local.name}-accesslogs"
+  certificate_file = "tls.cert"
+  web_file         = "tls.key"
+  config           = "zarf-config.yaml"
   tags = merge(
     var.tags,
     {
@@ -84,6 +87,40 @@ module "vpc" {
   instance_tenancy             = "default"
   enable_nat_gateway           = true
   single_nat_gateway           = true
+}
+
+# Create a bucket for certs / config
+resource "aws_s3_bucket" "tf-copy-file-s3" {
+  # checkov:skip=CKV_AWS_144: Cross region replication is overkill
+  # checkov:skip=CKV2_AWS_62: "Ensure S3 buckets should have event notifications enabled"
+  # checkov:skip=CKV_AWS_145: "Ensure that S3 buckets are encrypted with KMS by default"
+  # checkov:skip=CKV2_AWS_6: "Ensure that S3 bucket has a Public Access block"
+  # checkov:skip=CKV_AWS_21: "Ensure all data stored in the S3 bucket have versioning enabled" 
+  # checkov:skip=CKV2_AWS_61: "Ensure that an S3 bucket has a lifecycle configuration"
+  bucket = "narwhal-test-automation"
+  force_destroy = true
+}
+resource "aws_s3_bucket_acl" "tf-copy-file-s3" {
+  bucket = aws_s3_bucket.tf-copy-file-s3.id
+  acl    = "private"
+}
+
+# Upload Files to S3
+resource "aws_s3_object" "file1" {
+  bucket      = aws_s3_bucket.tf-copy-file-s3.id
+  key         = "tls.cert"
+  source      = local.certificate_file
+  source_hash = filemd5(local.certificate_file)
+  etag        = filemd5(local.certificate_file)
+  force_destroy = true
+}
+resource "aws_s3_object" "file2" {
+  bucket      = aws_s3_bucket.tf-copy-file-s3.id
+  key         = "tls.key"
+  source      = local.web_file
+  source_hash = filemd5(local.web_file)
+  etag        = filemd5(local.web_file)
+  force_destroy = true
 }
 
 data "aws_iam_policy_document" "kms_access" {

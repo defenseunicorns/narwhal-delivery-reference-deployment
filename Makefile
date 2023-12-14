@@ -6,6 +6,8 @@ SHELL := /bin/bash
 
 ZARF := zarf -l debug --no-progress --no-log-file
 
+DOMAIN := bigbang.dev
+
 ALL_THE_DOCKER_ARGS := -it --rm \
 	--cap-add=NET_ADMIN \
 	--cap-add=NET_RAW \
@@ -127,9 +129,7 @@ _test-platform-up: #_# On the test server, set up the k8s cluster and UDS platfo
 		--parameters command='[" \
 			cd ~/narwhal-delivery-reference-deployment \
 			&& git pull \
-			&& cp tls.example.cert tls.cert \
-			&& cp tls.example.key tls.key \
-			&& cp zarf-config.example.yaml zarf-config.yaml \
+			&& cp /etc/web/zarf-config.yaml zarf-config.yaml \
 			&& sudo make zarf-init platform-up \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
@@ -267,7 +267,7 @@ _test-update-etc-hosts: #_# Update /etc/hosts on the test instance
 		--parameters command='[" \
 			cd ~/narwhal-delivery-reference-deployment/test \
 			&& chmod +x ./update-local-etc-hosts.sh \
-			&& sudo ./update-local-etc-hosts.sh \
+			&& sudo ./update-local-etc-hosts.sh $(DOMAIN)\
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
@@ -316,13 +316,26 @@ endif
 		--confirm \
 
 # This is ugly as hell, but what it basically does is append the IP address of the keycloak ingress gateway to the coredns configmap so that things inside the cluster can resolve the keycloak domain name.
+# TODO: Find out if this is really only needed for *.bigbang.dev
 .PHONY: _update-coredns
 _update-coredns: _prereqs #_# Update the coredns configmap to include the keycloak ingress gateway IP. Only needed if you are using the *.bigbang.dev domain
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
-	zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}' | grep -q "$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak" || zarf tools kubectl patch cm coredns -n kube-system --type='json' -p="[{\"op\": \"replace\", \"path\": \"/data/NodeHosts\", \"value\":\"$(shell zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}')\n$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak.bigbang.dev\"}]"
+ifneq ($(DOMAIN), bigbang.dev)
+	echo "Domain is not bigbang.dev, no coredns update necessary"
+else
+	zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}' | grep -q "$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak" || zarf tools kubectl patch cm coredns -n kube-system --type='json' -p="[{\"op\": \"replace\", \"path\": \"/data/NodeHosts\", \"value\":\"$(shell zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}')\n$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak.$(DOMAIN)\"}]"
 	zarf tools kubectl rollout restart deployment coredns -n kube-system
+endif
+
+.PHONY: _temp-test
+_temp-test:
+ifneq ($(DOMAIN), bigbang.dev)
+	echo "NOT BIG BANG: keycloak.$(DOMAIN)"
+else
+	echo "IS BIG BANG: keycloak.$(DOMAIN)"
+endif
 
 .PHONY: _prereqs
 _prereqs: #_# Run prerequisite checks
