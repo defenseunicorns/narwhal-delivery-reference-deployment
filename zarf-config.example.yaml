@@ -18,7 +18,7 @@ package:
       GRAFANA_ADMIN_PASSWORD: admin
       NEUVECTOR_METRICS_PASSWRD: metrics
       NEUVECTOR_ADMIN_PASSWORD: admin
-      
+
       # Used for the test pipeline
       # TODO: Change for on-prem?
       DUBBD_VALUES: test/dubbd-values.yaml
