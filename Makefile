@@ -104,6 +104,7 @@ _test-all: #_# Run the whole test end-to-end. Uses Docker. Requires access to AW
 
 .PHONY: _test-infra-up
 _test-infra-up: #_# Use Terraform to bring up the test server and prepare it for use
+	CERT_EXISTS = 1
 	cd test/iac && terraform init && terraform apply --auto-approve
 	$(MAKE) _test-wait-for-zarf _test-install-dod-ca _test-clone _test-update-etc-hosts \
 
@@ -331,11 +332,12 @@ endif
 
 .PHONY: _temp-test
 _temp-test:
-ifneq ($(DOMAIN), bigbang.dev)
-	echo "NOT BIG BANG: keycloak.$(DOMAIN)"
+		echo "$(wildcard $($(pwd)/tls.))"
+ifneq ("$(wildcard $($(pwd)/tls.cert))", "")
 else
-	echo "IS BIG BANG: keycloak.$(DOMAIN)"
+	echo "Cert doesn't exist"
 endif
+
 
 .PHONY: _prereqs
 _prereqs: #_# Run prerequisite checks

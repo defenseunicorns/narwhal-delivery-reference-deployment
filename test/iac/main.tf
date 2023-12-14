@@ -177,6 +177,63 @@ data "aws_iam_policy_document" "kms_access" {
   }
 }
 
+# IAM Policy with Assume Role to EC2
+ data "aws_iam_policy_document" "ec2_assume_role" {
+   statement {
+     actions = ["sts:AssumeRole"]
+     principals {
+       type        = "Service"
+       identifiers = ["ec2.amazonaws.com"]
+     }
+   }
+ }
+# Configure IAM Role
+ resource "aws_iam_role" "ec2_iam_role" {
+   name                = "ec2-iam-role"
+   path                = "/"
+   assume_role_policy  = data.aws_iam_policy_document.ec2_assume_role.json
+ }
+# Configure IAM Instance Profile
+ resource "aws_iam_instance_profile" "ec2_profile" {
+   name = "ec2-profile"
+   role = aws_iam_role.ec2_iam_role.name
+ }
+# Attach EC2 Policies to Instance Role
+resource "aws_iam_policy_attachment" "ec2_attach1" {
+  name       = "ec2-iam-attachment"
+  roles      = [aws_iam_role.ec2_iam_role.id]
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+resource "aws_iam_policy_attachment" "ec2_attach2" {
+  name       = "ec2-iam-attachment"
+  roles      = [aws_iam_role.ec2_iam_role.id]
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+}
+# Create S3 IAM Policy
+resource "aws_iam_policy" "s3-ec2-policy" {
+  name        = "s3-ec2-policy"
+  description = "S3 ec2 policy"
+policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "s3:*"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      },
+    ]
+  })
+}
+
+# Attach S3 Policies to Instance Role
+resource "aws_iam_policy_attachment" "s3_attach" {
+  name       = "s3-iam-attachment"
+  roles      = [aws_iam_role.ec2_iam_role.id]
+  policy_arn = aws_iam_policy.s3-ec2-policy.arn
+}
+
 resource "aws_kms_key" "default" {
   description             = "SSM Key"
   deletion_window_in_days = 7
@@ -212,11 +269,20 @@ resource "aws_s3_bucket" "access_log_bucket" {
   }
 }
 
+data "template_file" "server" {
+  template = file("${path.module}/s3copy.sh")
+  vars = {
+    bucket_name = aws_s3_bucket.tf-copy-file-s3.name
+  }
+}
+
 module "server" {
-  source        = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.11"
-  name          = local.name
-  ami_id        = data.aws_ami.amazonlinux2.id
-  instance_type = var.instance_type
+  source                         = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.11"
+  name                          = local.name
+  ami_id                        = data.aws_ami.amazonlinux2.id
+  instance_type                 = var.instance_type
+  user_data                     = data.template_file.server.rendered
+  iam_instance_profile          = aws_iam_instance_profile.ec2_profile.id
   root_volume_config = {
     volume_type = "gp3"
     volume_size = 100
@@ -234,3 +300,4 @@ module "server" {
   zarf_version                   = var.zarf_version
   tags                           = local.tags
 }
+
