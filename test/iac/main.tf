@@ -13,6 +13,10 @@ terraform {
       source  = "hashicorp/time"
       version = ">= 0.7.0, < 1.0.0"
     }
+    template = {
+      source  = "hashicorp/template"
+      version = ">=2.1.2"
+    }
   }
 }
 
@@ -64,9 +68,9 @@ resource "random_id" "default" {
 locals {
   name                          = var.use_unique_names ? "${var.name_prefix}-${lower(random_id.default[0].hex)}" : var.name_prefix
   access_log_bucket_name_prefix = "${local.name}-accesslogs"
-  certificate_file = "tls.cert"
-  web_file         = "tls.key"
-  config           = "zarf-config.yaml"
+  certificate_file              = "tls.cert"
+  web_file                      = "tls.key"
+  config                        = "zarf-config.yaml"
   tags = merge(
     var.tags,
     {
@@ -91,15 +95,18 @@ module "vpc" {
 
 # Create a bucket for certs / config
 resource "aws_s3_bucket" "tf-copy-file-s3" {
+  # -- TODO production bucket acl
   # checkov:skip=CKV_AWS_144: Cross region replication is overkill
   # checkov:skip=CKV2_AWS_62: "Ensure S3 buckets should have event notifications enabled"
   # checkov:skip=CKV_AWS_145: "Ensure that S3 buckets are encrypted with KMS by default"
   # checkov:skip=CKV2_AWS_6: "Ensure that S3 bucket has a Public Access block"
-  # checkov:skip=CKV_AWS_21: "Ensure all data stored in the S3 bucket have versioning enabled" 
+  # checkov:skip=CKV_AWS_21: "Ensure all data stored in the S3 bucket have versioning enabled"
   # checkov:skip=CKV2_AWS_61: "Ensure that an S3 bucket has a lifecycle configuration"
-  bucket = "narwhal-test-automation"
+  # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled" -- This is the access logging bucket. Logging to the logging bucket would cause an infinite loop.
+  bucket        = "narwhal-test-automation"
   force_destroy = true
 }
+
 resource "aws_s3_bucket_acl" "tf-copy-file-s3" {
   bucket = aws_s3_bucket.tf-copy-file-s3.id
   acl    = "private"
@@ -107,21 +114,31 @@ resource "aws_s3_bucket_acl" "tf-copy-file-s3" {
 
 # Upload Files to S3
 resource "aws_s3_object" "file1" {
-  bucket      = aws_s3_bucket.tf-copy-file-s3.id
-  key         = "tls.cert"
-  source      = local.certificate_file
-  source_hash = filemd5(local.certificate_file)
-  etag        = filemd5(local.certificate_file)
+  bucket        = aws_s3_bucket.tf-copy-file-s3.id
+  key           = "tls.cert"
+  source        = local.certificate_file
+  source_hash   = filemd5(local.certificate_file)
+  etag          = filemd5(local.certificate_file)
   force_destroy = true
 }
 resource "aws_s3_object" "file2" {
-  bucket      = aws_s3_bucket.tf-copy-file-s3.id
-  key         = "tls.key"
-  source      = local.web_file
-  source_hash = filemd5(local.web_file)
-  etag        = filemd5(local.web_file)
+  bucket        = aws_s3_bucket.tf-copy-file-s3.id
+  key           = "tls.key"
+  source        = local.web_file
+  source_hash   = filemd5(local.web_file)
+  etag          = filemd5(local.web_file)
   force_destroy = true
 }
+
+resource "aws_s3_object" "file3" {
+  bucket        = aws_s3_bucket.tf-copy-file-s3.id
+  key           = "tls.key"
+  source        = local.web_file
+  source_hash   = filemd5(local.config)
+  etag          = filemd5(local.config)
+  force_destroy = true
+}
+
 
 data "aws_iam_policy_document" "kms_access" {
   # checkov:skip=CKV_AWS_111: todo reduce perms on key
@@ -178,26 +195,26 @@ data "aws_iam_policy_document" "kms_access" {
 }
 
 # IAM Policy with Assume Role to EC2
- data "aws_iam_policy_document" "ec2_assume_role" {
-   statement {
-     actions = ["sts:AssumeRole"]
-     principals {
-       type        = "Service"
-       identifiers = ["ec2.amazonaws.com"]
-     }
-   }
- }
+data "aws_iam_policy_document" "ec2_assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
 # Configure IAM Role
- resource "aws_iam_role" "ec2_iam_role" {
-   name                = "ec2-iam-role"
-   path                = "/"
-   assume_role_policy  = data.aws_iam_policy_document.ec2_assume_role.json
- }
+resource "aws_iam_role" "ec2_iam_role" {
+  name               = "ec2-iam-role"
+  path               = "/"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
+}
 # Configure IAM Instance Profile
- resource "aws_iam_instance_profile" "ec2_profile" {
-   name = "ec2-profile"
-   role = aws_iam_role.ec2_iam_role.name
- }
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2-profile"
+  role = aws_iam_role.ec2_iam_role.name
+}
 # Attach EC2 Policies to Instance Role
 resource "aws_iam_policy_attachment" "ec2_attach1" {
   name       = "ec2-iam-attachment"
@@ -211,9 +228,15 @@ resource "aws_iam_policy_attachment" "ec2_attach2" {
 }
 # Create S3 IAM Policy
 resource "aws_iam_policy" "s3-ec2-policy" {
+  # -- TODO, get a production s3 policy running
+  # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
+  # checkov:skip=CKV_AWS_290: "Ensure IAM policies does not allow write access without constraints"
+  # checkov:skip=CKV_AWS_288: "Ensure IAM policies does not allow data exfiltration"
+  # checkov:skip=CKV_AWS_289: "Ensure IAM policies does not allow permissions management /resource exposure without contraints"
+  # checkov:skip=CKV_AWS_355: "Ensure no IAM policies documents allow '*' as a statement's resource for restrictable actions"
   name        = "s3-ec2-policy"
   description = "S3 ec2 policy"
-policy = jsonencode({
+  policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
@@ -221,7 +244,7 @@ policy = jsonencode({
           "s3:*"
         ]
         Effect   = "Allow"
-        Resource = "*"
+        Resource = "arn:aws:s3:::narwhal-test-automation"
       },
     ]
   })
@@ -277,12 +300,12 @@ data "template_file" "server" {
 }
 
 module "server" {
-  source                         = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.11"
-  name                          = local.name
-  ami_id                        = data.aws_ami.amazonlinux2.id
-  instance_type                 = var.instance_type
-  user_data                     = data.template_file.server.rendered
-  iam_instance_profile          = aws_iam_instance_profile.ec2_profile.id
+  source               = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.11"
+  name                 = local.name
+  ami_id               = data.aws_ami.amazonlinux2.id
+  instance_type        = var.instance_type
+  user_data            = data.template_file.server.rendered
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.id
   root_volume_config = {
     volume_type = "gp3"
     volume_size = 100
@@ -300,4 +323,3 @@ module "server" {
   zarf_version                   = var.zarf_version
   tags                           = local.tags
 }
-

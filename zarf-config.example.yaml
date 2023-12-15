@@ -18,10 +18,10 @@ package:
       GRAFANA_ADMIN_PASSWORD: admin
       NEUVECTOR_METRICS_PASSWRD: metrics
       NEUVECTOR_ADMIN_PASSWORD: admin
-      
+
       # Used for the test pipeline
       #TODO: Change for on-prem?
-      DUBBD_VALUES: test/dubbd-values.yaml      
+      DUBBD_VALUES: test/dubbd-values.yaml
 
       # This tells Keycloak to use its internal database instead of an external one.
       # If you'd like to use an external one, set this to "false" and set the other KEYCLOAK_* variables appropriately.
