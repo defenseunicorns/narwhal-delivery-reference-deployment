@@ -141,6 +141,9 @@ _test-platform-up: #_# On the test server, set up the k8s cluster and UDS platfo
 			cd ~/narwhal-delivery-reference-deployment \
 			&& git pull \
 			&& cp /etc/web/zarf-config.yaml zarf-config.yaml \
+			&& cp /etc/web/tls.cert tls.cert \
+			&& cp /etc/web/tls.key tls.key \
+			&& chmod +x test/iac/s3copy.sh \
 			&& sudo make zarf-init platform-up \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
