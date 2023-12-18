@@ -48,3 +48,4 @@ package:
       KEYCLOAK_DB_PASSWORD: sup3r-secret-p@ssword
       KEYCLOAK_ADMIN_USERNAME: admin
       KEYCLOAK_ADMIN_PASSWORD: sup3r-secret-p@ssword
+
