@@ -115,8 +115,8 @@ resource "aws_s3_bucket_ownership_controls" "tf-copy-file-s3" {
 }
 
 resource "aws_s3_bucket_acl" "tf-copy-file-s3" {
-  bucket = aws_s3_bucket.tf-copy-file-s3.id
-  acl    = "private"
+  bucket     = aws_s3_bucket.tf-copy-file-s3.id
+  acl        = "private"
   depends_on = [aws_s3_bucket_ownership_controls.tf-copy-file-s3]
 }
 
@@ -223,7 +223,7 @@ resource "aws_iam_policy" "s3-ec2-policy" {
   # checkov:skip=CKV_AWS_355: "Ensure no IAM policies documents allow '*' as a statement's resource for restrictable actions"
   name        = "s3-ec2-policy"
   description = "S3 ec2 policy"
-  policy = <<EOF
+  policy      = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -273,9 +273,9 @@ resource "aws_iam_policy_attachment" "ec2_attach2" {
 
 # Attach S3 Policies to Instance Role
 #resource "aws_iam_policy_attachment" "s3_attach" {
-  #name       = "s3-iam-attachment"
-  #roles      = [aws_iam_role.ec2_iam_role.id]
-  #policy_arn = aws_iam_policy.s3-ec2-policy.arn
+#name       = "s3-iam-attachment"
+#roles      = [aws_iam_role.ec2_iam_role.id]
+#policy_arn = aws_iam_policy.s3-ec2-policy.arn
 #}
 
 resource "aws_kms_key" "default" {
@@ -321,10 +321,10 @@ data "template_file" "server" {
 }
 
 module "server" {
-  source               = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.11"
-  name                 = local.name
-  ami_id               = data.aws_ami.amazonlinux2.id
-  instance_type        = var.instance_type
+  source        = "git::https://github.com/defenseunicorns/terraform-aws-uds-bastion.git?ref=v0.0.11"
+  name          = local.name
+  ami_id        = data.aws_ami.amazonlinux2.id
+  instance_type = var.instance_type
   root_volume_config = {
     volume_type = "gp3"
     volume_size = 100
@@ -341,6 +341,6 @@ module "server" {
   tenancy                        = "default"
   zarf_version                   = var.zarf_version
   tags                           = local.tags
-  additional_user_data_script    = "${data.template_file.server.rendered}"
-  policy_arns                    = ["${aws_iam_policy.s3-ec2-policy.arn}"]
+  additional_user_data_script    = data.template_file.server.rendered
+  policy_arns                    = [aws_iam_policy.s3-ec2-policy.arn]
 }
