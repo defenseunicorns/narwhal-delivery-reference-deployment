@@ -140,9 +140,9 @@ _test-platform-up: #_# On the test server, set up the k8s cluster and UDS platfo
 		--parameters command='[" \
 			cd ~/narwhal-delivery-reference-deployment \
 			&& git pull \
-			&& cp /etc/web/zarf-config.yaml zarf-config.yaml \
-			&& cp /etc/web/tls.cert tls.cert \
-			&& cp /etc/web/tls.key tls.key \
+			&& sudo cp /etc/web/zarf-config.yaml zarf-config.yaml \
+			&& sudo cp /etc/web/tls.cert tls.cert \
+			&& sudo cp /etc/web/tls.key tls.key \
 			&& chmod +x test/iac/s3copy.sh \
 			&& sudo make zarf-init platform-up \
 			&& echo \"EXITCODE: 0\" \
@@ -345,7 +345,7 @@ endif
 
 .PHONY: _temp-test
 _temp-test:
-	if test -f tls.cert; then \
+	if test -f tls.cert && test -f tls.key && test -f zarf-config.yaml; then \
 		echo "Copying supplied certificates / configuration"; \
 		cp tls.cert test/iac; \
 		cp tls.key test/iac; \

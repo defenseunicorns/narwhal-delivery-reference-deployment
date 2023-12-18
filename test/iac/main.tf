@@ -69,8 +69,8 @@ locals {
   name                          = var.use_unique_names ? "${var.name_prefix}-${lower(random_id.default[0].hex)}" : var.name_prefix
   access_log_bucket_name_prefix = "${local.name}-accesslogs"
   certificate_file              = "tls.cert"
-  web_file                      = "tls.key"
-  config                        = "zarf-config.yaml"
+  key_file                      = "tls.key"
+  config_file                   = "zarf-config.yaml"
   tags = merge(
     var.tags,
     {
@@ -141,7 +141,7 @@ resource "aws_s3_object" "file2" {
 resource "aws_s3_object" "file3" {
   bucket        = aws_s3_bucket.tf-copy-file-s3.id
   key           = "zarf-config.yaml"
-  source        = local.web_file
+  source        = local.config_file
   source_hash   = filemd5(local.config)
   etag          = filemd5(local.config)
   force_destroy = true
