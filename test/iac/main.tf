@@ -132,9 +132,9 @@ resource "aws_s3_object" "file1" {
 resource "aws_s3_object" "file2" {
   bucket        = aws_s3_bucket.tf-copy-file-s3.id
   key           = "tls.key"
-  source        = local.web_file
-  source_hash   = filemd5(local.web_file)
-  etag          = filemd5(local.web_file)
+  source        = local.key_file
+  source_hash   = filemd5(local.key_file)
+  etag          = filemd5(local.key_file)
   force_destroy = true
 }
 
@@ -142,8 +142,8 @@ resource "aws_s3_object" "file3" {
   bucket        = aws_s3_bucket.tf-copy-file-s3.id
   key           = "zarf-config.yaml"
   source        = local.config_file
-  source_hash   = filemd5(local.config)
-  etag          = filemd5(local.config)
+  source_hash   = filemd5(local.config_file)
+  etag          = filemd5(local.config_file)
   force_destroy = true
 }
 

@@ -6,7 +6,7 @@ SHELL := /bin/bash
 
 ZARF := zarf -l debug --no-progress --no-log-file
 
-DOMAIN := bigbang.dev
+DOMAIN := ${shell grep -oP '(?<=DOMAIN: keycloak.).*' zarf-config.yaml}
 
 ALL_THE_DOCKER_ARGS := -it --rm \
 	--cap-add=NET_ADMIN \
@@ -83,7 +83,7 @@ endif
 	make _deploy-metallb \
 		_deploy-dubbd \
 		_deploy-idam \
-		_deploy-sso \
+		_deploy-sso \_test-clone
 		_update-coredns
 
 .PHONY: mission-app-up
@@ -188,7 +188,7 @@ _test-mission-app-test: #_# On the test server, run the mission app tests
 			cd ~/narwhal-delivery-reference-deployment/test \
 			&& git pull \
 			&& chmod +x ./test-mission-app.sh \
-			&& ./test-mission-app.sh \
+			&& ./test-mission-app.sh $(DOMAIN)\
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
@@ -345,6 +345,7 @@ endif
 
 .PHONY: _temp-test
 _temp-test:
+	echo $(DOMAIN); \
 	if test -f tls.cert && test -f tls.key && test -f zarf-config.yaml; then \
 		echo "Copying supplied certificates / configuration"; \
 		cp tls.cert test/iac; \
