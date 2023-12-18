@@ -108,6 +108,7 @@ resource "aws_s3_bucket" "tf-copy-file-s3" {
 }
 
 resource "aws_s3_bucket_ownership_controls" "tf-copy-file-s3" {
+  # checkov:skip=CKV2_AWS_65 "Ensure access control lists for S3 buckets are disabled" -- TODO production bucket acl
   bucket = aws_s3_bucket.tf-copy-file-s3.id
   rule {
     object_ownership = "ObjectWriter"
@@ -115,7 +116,6 @@ resource "aws_s3_bucket_ownership_controls" "tf-copy-file-s3" {
 }
 
 resource "aws_s3_bucket_acl" "tf-copy-file-s3" {
-  # checkov:skip=CKV2_AWS_65 "Ensure access control lists for S3 buckets are disabled" -- TODO production bucket acl
   bucket     = aws_s3_bucket.tf-copy-file-s3.id
   acl        = "private"
   depends_on = [aws_s3_bucket_ownership_controls.tf-copy-file-s3]
