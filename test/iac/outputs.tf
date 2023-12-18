@@ -11,5 +11,5 @@ output "vpc_cidr" {
 }
 
 output "s3_bucket_automation" {
-  value = aws_s3_bucket.tf-copy-file-s3.name
+  value = aws_s3_bucket.tf-copy-file-s3.id
 }

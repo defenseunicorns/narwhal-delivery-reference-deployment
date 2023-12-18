@@ -107,9 +107,17 @@ resource "aws_s3_bucket" "tf-copy-file-s3" {
   force_destroy = true
 }
 
+resource "aws_s3_bucket_ownership_controls" "tf-copy-file-s3" {
+  bucket = aws_s3_bucket.tf-copy-file-s3.id
+  rule {
+    object_ownership = "ObjectWriter"
+  }
+}
+
 resource "aws_s3_bucket_acl" "tf-copy-file-s3" {
   bucket = aws_s3_bucket.tf-copy-file-s3.id
   acl    = "private"
+  depends_on = [aws_s3_bucket_ownership_controls.tf-copy-file-s3]
 }
 
 # Upload Files to S3
@@ -132,7 +140,7 @@ resource "aws_s3_object" "file2" {
 
 resource "aws_s3_object" "file3" {
   bucket        = aws_s3_bucket.tf-copy-file-s3.id
-  key           = "tls.key"
+  key           = "zarf-config.yaml"
   source        = local.web_file
   source_hash   = filemd5(local.config)
   etag          = filemd5(local.config)
@@ -204,11 +212,47 @@ data "aws_iam_policy_document" "ec2_assume_role" {
     }
   }
 }
+
+# Create S3 IAM Policy
+resource "aws_iam_policy" "s3-ec2-policy" {
+  # -- TODO, get a production s3 policy running
+  # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
+  # checkov:skip=CKV_AWS_290: "Ensure IAM policies does not allow write access without constraints"
+  # checkov:skip=CKV_AWS_288: "Ensure IAM policies does not allow data exfiltration"
+  # checkov:skip=CKV_AWS_289: "Ensure IAM policies does not allow permissions management /resource exposure without contraints"
+  # checkov:skip=CKV_AWS_355: "Ensure no IAM policies documents allow '*' as a statement's resource for restrictable actions"
+  name        = "s3-ec2-policy"
+  description = "S3 ec2 policy"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::narwhal-test-automation"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": ["arn:aws:s3:::narwhal-test-automation/*"]
+    }
+  ]
+}
+EOF
+}
+
 # Configure IAM Role
 resource "aws_iam_role" "ec2_iam_role" {
-  name               = "ec2-iam-role"
-  path               = "/"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
+  name                = "ec2-iam-role"
+  path                = "/"
+  managed_policy_arns = [aws_iam_policy.s3-ec2-policy.arn]
+  assume_role_policy  = data.aws_iam_policy_document.ec2_assume_role.json
+  depends_on          = [aws_iam_policy.s3-ec2-policy]
 }
 # Configure IAM Instance Profile
 resource "aws_iam_instance_profile" "ec2_profile" {
@@ -226,36 +270,13 @@ resource "aws_iam_policy_attachment" "ec2_attach2" {
   roles      = [aws_iam_role.ec2_iam_role.id]
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
 }
-# Create S3 IAM Policy
-resource "aws_iam_policy" "s3-ec2-policy" {
-  # -- TODO, get a production s3 policy running
-  # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
-  # checkov:skip=CKV_AWS_290: "Ensure IAM policies does not allow write access without constraints"
-  # checkov:skip=CKV_AWS_288: "Ensure IAM policies does not allow data exfiltration"
-  # checkov:skip=CKV_AWS_289: "Ensure IAM policies does not allow permissions management /resource exposure without contraints"
-  # checkov:skip=CKV_AWS_355: "Ensure no IAM policies documents allow '*' as a statement's resource for restrictable actions"
-  name        = "s3-ec2-policy"
-  description = "S3 ec2 policy"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "s3:*"
-        ]
-        Effect   = "Allow"
-        Resource = "arn:aws:s3:::narwhal-test-automation"
-      },
-    ]
-  })
-}
 
 # Attach S3 Policies to Instance Role
-resource "aws_iam_policy_attachment" "s3_attach" {
-  name       = "s3-iam-attachment"
-  roles      = [aws_iam_role.ec2_iam_role.id]
-  policy_arn = aws_iam_policy.s3-ec2-policy.arn
-}
+#resource "aws_iam_policy_attachment" "s3_attach" {
+  #name       = "s3-iam-attachment"
+  #roles      = [aws_iam_role.ec2_iam_role.id]
+  #policy_arn = aws_iam_policy.s3-ec2-policy.arn
+#}
 
 resource "aws_kms_key" "default" {
   description             = "SSM Key"
@@ -295,7 +316,7 @@ resource "aws_s3_bucket" "access_log_bucket" {
 data "template_file" "server" {
   template = file("${path.module}/s3copy.sh")
   vars = {
-    bucket_name = aws_s3_bucket.tf-copy-file-s3.name
+    bucket_name = aws_s3_bucket.tf-copy-file-s3.id
   }
 }
 
@@ -304,8 +325,6 @@ module "server" {
   name                 = local.name
   ami_id               = data.aws_ami.amazonlinux2.id
   instance_type        = var.instance_type
-  user_data            = data.template_file.server.rendered
-  iam_instance_profile = aws_iam_instance_profile.ec2_profile.id
   root_volume_config = {
     volume_type = "gp3"
     volume_size = 100
@@ -322,4 +341,6 @@ module "server" {
   tenancy                        = "default"
   zarf_version                   = var.zarf_version
   tags                           = local.tags
+  additional_user_data_script    = "${data.template_file.server.rendered}"
+  policy_arns                    = ["${aws_iam_policy.s3-ec2-policy.arn}"]
 }
