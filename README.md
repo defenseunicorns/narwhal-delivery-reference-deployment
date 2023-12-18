@@ -59,8 +59,8 @@ This reference deployment uses several components that are still in the early st
 - AWS creds configured and available using the standard [environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 - Docker
 - [AWS CLI Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
-- If testing custom domains: a `zarf-config.yaml` in this directory that has your domains.
 - If testing custom certificates: a `tls.cert` and `tls.key` for your custom domain to test
+- If testing custom domains: a `zarf-config.yaml` in this directory that has your domains.
 
 ## Objective
 
