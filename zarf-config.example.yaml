@@ -15,10 +15,17 @@ package:
       IP_ADDRESS_KEYCLOAK_INGRESSGATEWAY: 10.0.255.3
 
       #DUBBD variables: see https://github.com/defenseunicorns/uds-package-dubbd
+<<<<<<< HEAD
       GRAFANA_ADMIN_PASSWORD: admin
       NEUVECTOR_METRICS_PASSWRD: metrics
       NEUVECTOR_ADMIN_PASSWORD: admin
 
+=======
+      GRAFANA_ADMIN_PASSWORD: grafanapassword
+      NEUVECTOR_METRICS_PASSWRD: metricspassword
+      NEUVECTOR_ADMIN_PASSWORD: adminpassword
+      
+>>>>>>> 286bf58 (fix: ca.pem added to upstream vulns)
       # Used for the test pipeline
       # TODO: Change for on-prem?
       DUBBD_VALUES: test/dubbd-values.yaml
@@ -29,10 +36,14 @@ package:
       KEYCLOAK_DEV_DB_ENABLED: "true"
 
       # The domain to use. Will get used as the base for all deployments. For example, if DOMAIN is 'bigbang.dev' then keycloak will be listening at 'https://keycloak.bigbang.dev'
+<<<<<<< HEAD
       # KEYCLOAK_BASE_DOMAIN needs to be set to match,
       # See https://github.com/defenseunicorns/uds-sso
       DOMAIN: bigbang.dev
       KEYCLOAK_BASE_DOMAIN: keycloak.bigbang.dev
+=======
+      DOMAIN: dextest.dev
+>>>>>>> 286bf58 (fix: ca.pem added to upstream vulns)
 
       # The files where the TLS cert and key live.
       # Don't change these. Instead, create these files in this directory with the proper data in them. The filenames 'tls.cert' and 'tls.key' are in the .gitignore file so they won't be committed. Do not commit the TLS secret key to source control.
@@ -45,6 +56,16 @@ package:
 
       #admin credential setup for keycloak
       KEYCLOAK_DB_USERNAME: kcadmin
+<<<<<<< HEAD
       KEYCLOAK_DB_PASSWORD: sup3r-secret-p@ssword
       KEYCLOAK_ADMIN_USERNAME: admin
       KEYCLOAK_ADMIN_PASSWORD: sup3r-secret-p@ssword
+=======
+      KEYCLOAK_DB_PASSWORD: kcadminpwd
+      KEYCLOAK_ADMIN_USERNAME: kcadmin
+      KEYCLOAK_ADMIN_PASSWORD: kcadmin
+
+      # SSO variabels:
+      # See https://github.com/defenseunicorns/uds-sso
+      KEYCLOAK_BASE_DOMAIN: keycloak.bigbang.dev
+>>>>>>> 286bf58 (fix: ca.pem added to upstream vulns)
