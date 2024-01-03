@@ -10,3 +10,13 @@ istio:
     tenant:
       tls:
         minProtocolVersion: TLSV1_2
+# See https://github.com/defenseunicorns/uds-sso/issues/38
+kyvernoPolicies:
+  values:
+    policies:
+      require-non-root-user:
+        exclude:
+          any:
+            - resources:
+                namespaces:
+                  - pepr-system
