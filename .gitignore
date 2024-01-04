@@ -44,3 +44,4 @@ override.tf.json
 terraform.rc
 
 sshuttle.pid
+*.ipynb*

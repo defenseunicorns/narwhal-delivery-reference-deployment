@@ -20,7 +20,7 @@ package:
       NEUVECTOR_ADMIN_PASSWORD: admin
 
       # Used for the test pipeline
-      # TODO: Change for on-prem?
+      #TODO: Change for on-prem?
       DUBBD_VALUES: test/dubbd-values.yaml
 
       # This tells Keycloak to use its internal database instead of an external one.
