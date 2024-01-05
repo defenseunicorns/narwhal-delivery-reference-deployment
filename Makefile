@@ -164,6 +164,8 @@ _test-mission-app-up: #_# On the test server, build and deploy the mission app
 
 .PHONY: _test-mission-app-test
 _test-mission-app-test: #_# On the test server, run the mission app tests
+	echo "Testing mission app:"; \
+	echo "  tls.cert valid until: $(shell openssl x509 -enddate -noout -in tls.cert)"; \
 	REGION=$$(cd test/iac && terraform output -raw region); \
 	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
 	aws ssm start-session \
