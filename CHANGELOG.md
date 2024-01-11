@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.0.5](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/compare/v0.0.4...v0.0.5) (2024-01-11)
+
+
+### Bug Fixes
+
+* exclude pepr-system namespace from kyverno policy that was blocking DUBBD upgrade ([#62](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/62)) ([d52cc6d](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/d52cc6df1d96835de2951d248b63bf7ffa9b73ff))
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency defenseunicorns/uds-package-dubbd to v0.16.0 ([#55](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/55)) ([645f077](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/645f07710110e63112f44f6d4618d6866210625b))
+* **deps:** update stable ([#56](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/56)) ([748d627](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/748d627e5a347f4bfe818bf537eb72b505dae989))
+* **deps:** update stable ([#57](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/57)) ([bb758d9](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/bb758d9a69dfb8ad10b6970c018d667a43562963))
+* **deps:** update stable ([#63](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/63)) ([d1fdb72](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/d1fdb7278fbab76c458e419c1cb0ff3c375007b7))
+* **deps:** update stable ([#64](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/64)) ([c54baaa](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/c54baaa5a39da21fdb50b20291d73de624bb778a))
+* **deps:** update tj-actions/changed-files action to v41 [security] ([#61](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/61)) ([acda84b](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/acda84b117ed99fa3a6f4c793ce3fb95bdaaddbb))
+* Renovate move DUBBD to separate group ([#53](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/53)) ([48fed0b](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/48fed0b09bd6e46f734f41ae9689061dec5cd5c9))
+
 ## [0.0.4](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/compare/v0.0.3...v0.0.4) (2023-12-06)
 
 
