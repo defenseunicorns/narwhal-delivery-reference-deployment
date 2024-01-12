@@ -10,3 +10,16 @@ istio:
     tenant:
       tls:
         minProtocolVersion: TLSV1_2
+kyvernoPolicies:
+  values:
+    policies:
+      require-non-root-user:
+        # This was changed to Enforce by default in BB v2.16.0. We still have it in audit mode to make testing stuff easier.
+        # We recommend changing to "Enforce" in production
+        validationFailureAction: audit
+        exclude:
+          any:
+            - resources:
+                namespaces:
+                  # See https://github.com/defenseunicorns/uds-sso/issues/38
+                  - pepr-system
