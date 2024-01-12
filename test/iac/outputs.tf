@@ -9,3 +9,7 @@ output "server_id" {
 output "vpc_cidr" {
   value = var.vpc_cidr
 }
+
+output "s3_bucket_automation" {
+  value = aws_s3_bucket.tf-copy-file-s3.id
+}

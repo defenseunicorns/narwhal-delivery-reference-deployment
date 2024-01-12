@@ -6,6 +6,8 @@ SHELL := /bin/bash
 
 ZARF := zarf -l debug --no-progress --no-log-file
 
+DOMAIN := ${shell grep -oP '(?<=DOMAIN: keycloak.).*' zarf-config.yaml}
+
 ALL_THE_DOCKER_ARGS := -it --rm \
 	--cap-add=NET_ADMIN \
 	--cap-add=NET_RAW \
@@ -81,7 +83,7 @@ endif
 	make _deploy-metallb \
 		_deploy-dubbd \
 		_deploy-idam \
-		_deploy-sso \
+		_deploy-sso \_test-clone
 		_update-coredns
 
 .PHONY: mission-app-up
@@ -102,13 +104,25 @@ _test-all: #_# Run the whole test end-to-end. Uses Docker. Requires access to AW
 
 .PHONY: _test-infra-up
 _test-infra-up: #_# Use Terraform to bring up the test server and prepare it for use
+	if test -f tls.cert; then \
+		echo "Copying supplied certificates / configuration"; \
+		cp tls.cert test/iac; \
+		cp tls.key test/iac; \
+		cp zarf-config.yaml test/iac; \
+	else \
+		echo "Copying bigbang.dev certificates / configuration"; \
+		cp tls.example.cert test/iac/tls.cert; \
+		cp tls.example.key test/iac/tls.key; \
+		cp zarf-config.example.yaml test/iac/zarf-config.yaml; \
+	fi
 	cd test/iac && terraform init && terraform apply --auto-approve
 	$(MAKE) _test-wait-for-zarf _test-install-dod-ca _test-clone _test-update-etc-hosts \
 
 # Runs destroy again if the first one fails to complete.
 .PHONY: _test-infra-down
 _test-infra-down: #_# Use Terraform to bring down the test server
-	cd test/iac && terraform init && terraform destroy --auto-approve || terraform destroy -auto-approve
+	cd test/iac && terraform init && terraform destroy --auto-approve || terraform destroy -auto-approve; \
+	rm tls.cert && rm tls.key && rm zarf-config.yaml
 
 .PHONY: _test-start-session
 _test-start-session: #_# Open an interactive shell on the test server
@@ -127,9 +141,10 @@ _test-platform-up: #_# On the test server, set up the k8s cluster and UDS platfo
 		--parameters command='[" \
 			cd ~/narwhal-delivery-reference-deployment \
 			&& git pull \
-			&& cp tls.example.cert tls.cert \
-			&& cp tls.example.key tls.key \
-			&& cp zarf-config.example.yaml zarf-config.yaml \
+			&& sudo cp /etc/web/zarf-config.yaml zarf-config.yaml \
+			&& sudo cp /etc/web/tls.cert tls.cert \
+			&& sudo cp /etc/web/tls.key tls.key \
+			&& chmod +x test/iac/s3copy.sh \
 			&& sudo make zarf-init platform-up \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
@@ -164,6 +179,8 @@ _test-mission-app-up: #_# On the test server, build and deploy the mission app
 
 .PHONY: _test-mission-app-test
 _test-mission-app-test: #_# On the test server, run the mission app tests
+	echo "Testing mission app:"; \
+	echo " tls.cert valid until: $(shell openssl x509 -enddate -noout -in test/iac/tls.cert)"; \
 	REGION=$$(cd test/iac && terraform output -raw region); \
 	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
 	aws ssm start-session \
@@ -174,7 +191,7 @@ _test-mission-app-test: #_# On the test server, run the mission app tests
 			cd ~/narwhal-delivery-reference-deployment/test \
 			&& git pull \
 			&& chmod +x ./test-mission-app.sh \
-			&& ./test-mission-app.sh \
+			&& ./test-mission-app.sh $(DOMAIN) \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
@@ -267,7 +284,7 @@ _test-update-etc-hosts: #_# Update /etc/hosts on the test instance
 		--parameters command='[" \
 			cd ~/narwhal-delivery-reference-deployment/test \
 			&& chmod +x ./update-local-etc-hosts.sh \
-			&& sudo ./update-local-etc-hosts.sh \
+			&& sudo ./update-local-etc-hosts.sh $(DOMAIN)\
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
@@ -316,13 +333,33 @@ endif
 		--confirm \
 
 # This is ugly as hell, but what it basically does is append the IP address of the keycloak ingress gateway to the coredns configmap so that things inside the cluster can resolve the keycloak domain name.
+# TODO: Find out if this is really only needed for *.bigbang.dev
 .PHONY: _update-coredns
 _update-coredns: _prereqs #_# Update the coredns configmap to include the keycloak ingress gateway IP. Only needed if you are using the *.bigbang.dev domain
 ifneq ($(shell id -u), 0)
 	$(error "This target must be run as root")
 endif
-	zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}' | grep -q "$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak" || zarf tools kubectl patch cm coredns -n kube-system --type='json' -p="[{\"op\": \"replace\", \"path\": \"/data/NodeHosts\", \"value\":\"$(shell zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}')\n$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak.bigbang.dev\"}]"
+ifneq ($(DOMAIN), bigbang.dev)
+	echo "Domain is not bigbang.dev, no coredns update necessary"
+else
+	zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}' | grep -q "$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak" || zarf tools kubectl patch cm coredns -n kube-system --type='json' -p="[{\"op\": \"replace\", \"path\": \"/data/NodeHosts\", \"value\":\"$(shell zarf tools kubectl get cm coredns -n kube-system -o jsonpath='{.data.NodeHosts}')\n$(shell zarf tools kubectl get svc keycloak-ingressgateway -n istio-system -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') keycloak.$(DOMAIN)\"}]"
 	zarf tools kubectl rollout restart deployment coredns -n kube-system
+endif
+
+.PHONY: _temp-test
+_temp-test:
+	echo $(DOMAIN); \
+	if test -f tls.cert && test -f tls.key && test -f zarf-config.yaml; then \
+		echo "Copying supplied certificates / configuration"; \
+		cp tls.cert test/iac; \
+		cp tls.key test/iac; \
+		cp zarf-config.yaml test/iac; \
+	else \
+		echo "Copying bigbang.dev certificates / configuration"; \
+		cp tls.example.cert test/iac/tls.cert; \
+		cp tls.example.key test/iac/tls.key; \
+		cp zarf-config.example.yaml test/iac/zarf-config.yaml; \
+	fi
 
 .PHONY: _prereqs
 _prereqs: #_# Run prerequisite checks
