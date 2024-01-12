@@ -121,7 +121,8 @@ _test-infra-up: #_# Use Terraform to bring up the test server and prepare it for
 # Runs destroy again if the first one fails to complete.
 .PHONY: _test-infra-down
 _test-infra-down: #_# Use Terraform to bring down the test server
-	cd test/iac && terraform init && terraform destroy --auto-approve || terraform destroy -auto-approve
+	cd test/iac && terraform init && terraform destroy --auto-approve || terraform destroy -auto-approve; \
+	rm tls.cert && rm tls.key && rm zarf-config.yaml
 
 .PHONY: _test-start-session
 _test-start-session: #_# Open an interactive shell on the test server
@@ -172,14 +173,14 @@ _test-mission-app-up: #_# On the test server, build and deploy the mission app
 		--parameters command='[" \
 			cd ~/narwhal-delivery-reference-deployment \
 			&& git pull \
-			&& echo "Testing mission app:" \
-			&& echo " tls.cert valid until: $(openssl x509 -enddate -noout -in tls.cert)" \
 			&& sudo make mission-app-up \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
 .PHONY: _test-mission-app-test
 _test-mission-app-test: #_# On the test server, run the mission app tests
+	echo "Testing mission app:"; \
+	echo " tls.cert valid until: $(shell openssl x509 -enddate -noout -in test/iac/tls.cert)"; \
 	REGION=$$(cd test/iac && terraform output -raw region); \
 	SERVER_ID=$$(cd test/iac && terraform output -raw server_id); \
 	aws ssm start-session \
@@ -190,7 +191,7 @@ _test-mission-app-test: #_# On the test server, run the mission app tests
 			cd ~/narwhal-delivery-reference-deployment/test \
 			&& git pull \
 			&& chmod +x ./test-mission-app.sh \
-			&& ./test-mission-app.sh $(DOMAIN)\
+			&& ./test-mission-app.sh $(DOMAIN) \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
 
