@@ -172,6 +172,8 @@ _test-mission-app-up: #_# On the test server, build and deploy the mission app
 		--parameters command='[" \
 			cd ~/narwhal-delivery-reference-deployment \
 			&& git pull \
+			&& echo "Testing mission app:" \
+			&& echo " tls.cert valid until: $(openssl x509 -enddate -noout -in tls.cert)" \
 			&& sudo make mission-app-up \
 			&& echo \"EXITCODE: 0\" \
 		"]' | tee /dev/tty | grep -q "EXITCODE: 0"
