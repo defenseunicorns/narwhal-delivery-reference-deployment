@@ -21,56 +21,56 @@ runs:
           fi
     - name: restore pre-commit-cache
       if: inputs.action == 'restore'
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: "${{ github.workspace }}/.cache/pre-commit"
         key: "pre-commit|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
     - name: save pre-commit-cache
       if: inputs.action == 'save'
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: "${{ github.workspace }}/.cache/pre-commit"
         key: "pre-commit|${{hashFiles('.env')}}|${{hashFiles('.pre-commit-config.yaml')}}"
     - name: restore gopath cache
       if: inputs.action == 'restore'
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: "${{ github.workspace }}/.cache/go"
         key: "gopath|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
     - name: save gopath cache
       if: inputs.action == 'save'
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: "${{ github.workspace }}/.cache/go"
         key: "gopath|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
     - name: restore gobuild cache
       if: inputs.action == 'restore'
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: "${{ github.workspace }}/.cache/go-build"
         key: "gobuild|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
     - name: save gobuild cache
       if: inputs.action == 'save'
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: "${{ github.workspace }}/.cache/go-build"
         key: "gobuild|${{ hashFiles('.env') }}|${{ hashFiles('go.sum') }}"
     - name: restore zarf cache
       if: inputs.action == 'restore'
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: "${{ github.workspace }}/.cache/.zarf-cache"
         key: "zarf|${{ hashFiles('.env') }}"
     - name: save zarf cache
       if: inputs.action == 'save'
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: "${{ github.workspace }}/.cache/.zarf-cache"
         key: "zarf|${{ hashFiles('.env') }}"
     - name: restore docker cache
       if: inputs.action == 'restore'
       id: restore-docker-cache
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: "${{ github.workspace }}/.cache/docker"
         key: "docker|${{ hashFiles('.env') }}"
@@ -81,19 +81,19 @@ runs:
         make +docker-load-build-harness
     - name: save docker cache
       if: inputs.action == 'save'
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: "${{ github.workspace }}/.cache/docker"
         key: "docker|${{ hashFiles('.env') }}"
     - name: restore terraform cache
       if: inputs.action == 'restore'
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       with:
         path: "${{ github.workspace }}/.cache/.terraform.d/plugin-cache"
         key: "${{ runner.os }}-terraform-plugins|${{ hashFiles('.env') }}"
     - name: save terraform cache
       if: inputs.action == 'save'
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: "${{ github.workspace }}/.cache/.terraform.d/plugin-cache"
         key: "${{ runner.os }}-terraform-plugins|${{ hashFiles('.env') }}"
