@@ -79,12 +79,12 @@
       matchDatasources: ["github-tags", "git-tags"],
       versioning: "loose"
     },
+//    {
+//      matchPackageNames: ["defenseunicorns/uds-package-dubbd"],
+//      groupName: "uds-package-dubbd"
+//    },
     {
-      matchPackageNames: ["defenseunicorns/uds-package-dubbd"],
-      groupName: "uds-package-dubbd"
-    },
-    {
-      excludePackageNames: ["defenseunicorns/uds-package-dubbd"],
+      excludePackageNames: [],
       groupName: "stable"
     }
   ]
