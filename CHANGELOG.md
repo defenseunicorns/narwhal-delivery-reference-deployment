@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.6](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/compare/v0.0.5...v0.0.6) (2024-02-15)
+
+
+### Miscellaneous Chores
+
+* **deps:** update stable ([#65](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/65)) ([4929100](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/49291008c256653e2bc4b8b80a755861951a9e11))
+* **deps:** update stable (major) ([#68](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/68)) ([d68b829](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/d68b8293e5b08daf75089b2d0b51737357c9fee7))
+* update expired TLS cert ([#70](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/issues/70)) ([4332ddd](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/commit/4332ddd5a8bbcb3402c2cd7c29b96fe456fb455d))
+
 ## [0.0.5](https://github.com/defenseunicorns/narwhal-delivery-reference-deployment/compare/v0.0.4...v0.0.5) (2024-01-11)
 
 
