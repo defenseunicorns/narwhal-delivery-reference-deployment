@@ -27,7 +27,7 @@ runs:
   steps:
     - name: Get token
       id: get_installation_token
-      uses: peter-murray/workflow-application-token-action@v2
+      uses: peter-murray/workflow-application-token-action@v3
       with:
         application_id: ${{ inputs.application_id }}
         application_private_key: ${{ inputs.application_private_key }}
@@ -65,7 +65,7 @@ runs:
     - name: "Get token again"
       if: ${{ always() }}
       id: get_installation_token_again
-      uses: peter-murray/workflow-application-token-action@v2
+      uses: peter-murray/workflow-application-token-action@v3
       with:
         application_id: ${{ inputs.application_id }}
         application_private_key: ${{ inputs.application_private_key }}
